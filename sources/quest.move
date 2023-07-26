@@ -18,7 +18,6 @@ module holasui_quest::quest {
 
     use holasui_quest::utils::{handle_payment, withdraw_balance};
 
-    // use holasui::holasui::{Self, AdminCap, project_url, version, HolasuiHub};
     // ======== Constants =========
 
     const VERSION: u64 = 1;
@@ -149,11 +148,11 @@ module holasui_quest::quest {
         );
         display::update_version(&mut reward_display);
 
+        public_transfer(publisher, sender(ctx));
+        public_transfer(reward_display, sender(ctx));
         public_transfer(AdminCap {
             id: object::new(ctx),
         }, sender(ctx));
-        public_transfer(publisher, sender(ctx));
-        public_transfer(reward_display, sender(ctx));
         public_transfer(Verifier {
             id: object::new(ctx),
         }, sender(ctx));
