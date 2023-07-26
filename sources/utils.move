@@ -1,4 +1,4 @@
-module holasui::utils {
+module holasui_quest::utils {
     use sui::balance::{Self, Balance};
     use sui::coin::{Self, Coin};
     use sui::pay;

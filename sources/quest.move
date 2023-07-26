@@ -1,4 +1,4 @@
-module holasui::quest {
+module holasui_quest::quest {
     use std::string::{Self, String, utf8};
     use std::vector;
 
