@@ -1,5 +1,5 @@
 [package]
-name = "holasui-quest"
+name = "holasui_quest"
 version = "0.0.0"
 
 [dependencies.Sui]
