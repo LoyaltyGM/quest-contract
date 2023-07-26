@@ -16,7 +16,7 @@ module holasui_quest::quest {
     use sui::tx_context::{sender, TxContext};
     use sui::url::{Self, Url};
 
-    use holasui::utils::{handle_payment, withdraw_balance};
+    use holasui_quest::utils::{handle_payment, withdraw_balance};
 
     // use holasui::holasui::{Self, AdminCap, project_url, version, HolasuiHub};
     // ======== Constants =========

@@ -4,7 +4,7 @@ module holasui_quest::utils {
     use sui::pay;
     use sui::tx_context::TxContext;
 
-    friend holasui::quest;
+    friend holasui_quest::quest;
 
     // ======== Errors =========
 
