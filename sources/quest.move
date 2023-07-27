@@ -384,6 +384,20 @@ module holasui_quest::quest {
         campaign.reward_image_url = url::new_unsafe(string::to_ascii(image_url));
     }
 
+    entry fun update_campaign_start_time(
+        admin_cap: &SpaceAdminCap,
+        space: &mut Space,
+        campaign_id: ID,
+        start_time: u64
+    ) {
+        check_space_version(space);
+        check_space_admin(admin_cap, space);
+
+        let campaign = object_table::borrow_mut(&mut space.campaigns, campaign_id);
+
+        campaign.start_time = start_time;
+    }
+
     entry fun update_campaign_end_time(
         admin_cap: &SpaceAdminCap,
         space: &mut Space,
