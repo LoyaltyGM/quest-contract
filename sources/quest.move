@@ -458,7 +458,7 @@ module holasui_quest::quest {
 
     // ======== Verifier functions =========
 
-    entry fun verify_campaign_quest(
+    entry fun verify_quest(
         _: &Verifier,
         space: &mut Space,
         campaign_id: ID,
@@ -488,7 +488,7 @@ module holasui_quest::quest {
 
     // ======== User functions =========
 
-    entry fun claim_campaign_reward(
+    entry fun claim_reward(
         space: &mut Space,
         campaign_id: ID,
         ctx: &mut TxContext
