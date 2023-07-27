@@ -1,6 +1,5 @@
 module holasui_quest::quest {
     use std::string::{Self, String, utf8};
-    use std::vector;
 
     use sui::balance::{Self, Balance};
     use sui::clock::{Self, Clock};
@@ -82,11 +81,12 @@ module holasui_quest::quest {
         reward_image_url: Url,
         start_time: u64,
         end_time: u64,
-        quests: vector<Quest>,
+        quests: ObjectTable<ID, Quest>,
         done: Table<address, bool>
     }
 
-    struct Quest has store {
+    struct Quest has key, store {
+        id: UID,
         /// The name of the quest
         name: String,
         /// The description of the quest
@@ -119,7 +119,7 @@ module holasui_quest::quest {
     struct QuestDone has copy, drop {
         space_id: ID,
         campaign_id: ID,
-        quest_index: u64,
+        quest_id: ID,
     }
 
     struct CampaignDone has copy, drop {
@@ -310,7 +310,7 @@ module holasui_quest::quest {
             reward_image_url: url::new_unsafe(string::to_ascii(image_url)),
             start_time,
             end_time,
-            quests: vector::empty(),
+            quests: object_table::new(ctx),
             done: table::new(ctx)
         };
 
@@ -332,7 +332,7 @@ module holasui_quest::quest {
             done
         } = object_table::remove(&mut space.campaigns, campaign_id);
 
-        vector::destroy_empty(quests);
+        object_table::destroy_empty(quests);
         table::drop(done);
         object::delete(id)
     }
@@ -403,7 +403,9 @@ module holasui_quest::quest {
 
         let campaign = object_table::borrow_mut(&mut space.campaigns, campaign_id);
 
+        // todo: add event for quest creation
         let quest = Quest {
+            id: object::new(ctx),
             name,
             description,
             call_to_action_url: url::new_unsafe(string::to_ascii(call_to_action_url)),
@@ -414,15 +416,16 @@ module holasui_quest::quest {
             done: table::new(ctx)
         };
 
-        vector::push_back(&mut campaign.quests, quest);
+        object_table::add(&mut campaign.quests, object::id(&quest), quest);
     }
 
-    entry fun remove_quest(admin_cap: &SpaceAdminCap, space: &mut Space, campaign_id: ID, quest_index: u64) {
+    entry fun remove_quest(admin_cap: &SpaceAdminCap, space: &mut Space, campaign_id: ID, quest_id: ID) {
         check_space_version(space);
         check_space_admin(admin_cap, space);
 
         let campaign = object_table::borrow_mut(&mut space.campaigns, campaign_id);
         let Quest {
+            id,
             name: _,
             description: _,
             call_to_action_url: _,
@@ -431,8 +434,9 @@ module holasui_quest::quest {
             function_name: _,
             arguments: _,
             done,
-        } = vector::remove(&mut campaign.quests, quest_index);
+        } = object_table::remove(&mut campaign.quests, quest_id);
 
+        object::delete(id);
         table::drop(done);
     }
 
@@ -442,7 +446,7 @@ module holasui_quest::quest {
         _: &Verifier,
         space: &mut Space,
         campaign_id: ID,
-        quest_index: u64,
+        quest_id: ID,
         user: address,
         clock: &Clock,
     ) {
@@ -452,13 +456,13 @@ module holasui_quest::quest {
         assert!(clock::timestamp_ms(clock) >= campaign.start_time, EInvalidTime);
         assert!(clock::timestamp_ms(clock) <= campaign.end_time, EInvalidTime);
 
-        let quest = vector::borrow_mut(&mut campaign.quests, quest_index);
+        let quest = object_table::borrow_mut(&mut campaign.quests, quest_id);
         assert!(!table::contains(&quest.done, user), EQuestAlreadyDone);
 
         emit(QuestDone {
             space_id: object::uid_to_inner(&space.id),
             campaign_id,
-            quest_index
+            quest_id
         });
 
         table::add(&mut quest.done, user, true);
@@ -509,15 +513,16 @@ module holasui_quest::quest {
         *current_allowed_spaces_amount = *current_allowed_spaces_amount - 1;
     }
 
+    // todo: change way to check if all quests are done
     fun check_campaign_quests_done(campaign: &Campaign, address: address) {
         let quests = &campaign.quests;
 
         let i = 0;
-        while (i < vector::length(quests)) {
-            let quest = vector::borrow(quests, i);
-            assert!(table::contains(&quest.done, address), EQuestNotDone);
-            i = i + 1;
-        }
+        // while (i < vector::length(quests)) {
+        //     let quest = vector::borrow(quests, i);
+        //     assert!(table::contains(&quest.done, address), EQuestNotDone);
+        //     i = i + 1;
+        // }
     }
 
 
