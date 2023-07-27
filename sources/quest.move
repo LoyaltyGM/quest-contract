@@ -8,8 +8,7 @@ module holasui_quest::quest {
     use sui::display;
     use sui::event::emit;
     use sui::object::{Self, ID, UID};
-    use sui::object_table;
-    use sui::object_table::ObjectTable;
+    use sui::object_table::{Self, ObjectTable};
     use sui::package;
     use sui::sui::SUI;
     use sui::table::{Self, Table};
@@ -81,6 +80,7 @@ module holasui_quest::quest {
         name: String,
         description: String,
         reward_image_url: Url,
+        start_time: u64,
         end_time: u64,
         quests: vector<Quest>,
         done: Table<address, bool>
@@ -294,6 +294,7 @@ module holasui_quest::quest {
         name: String,
         description: String,
         image_url: String,
+        start_time: u64,
         end_time: u64,
         ctx: &mut TxContext
     ) {
@@ -307,6 +308,7 @@ module holasui_quest::quest {
             name,
             description,
             reward_image_url: url::new_unsafe(string::to_ascii(image_url)),
+            start_time,
             end_time,
             quests: vector::empty(),
             done: table::new(ctx)
@@ -324,6 +326,7 @@ module holasui_quest::quest {
             name: _,
             description: _,
             reward_image_url: _,
+            start_time: _,
             end_time: _,
             quests,
             done
@@ -446,6 +449,7 @@ module holasui_quest::quest {
         check_space_version(space);
 
         let campaign = object_table::borrow_mut(&mut space.campaigns, campaign_id);
+        assert!(clock::timestamp_ms(clock) >= campaign.start_time, EInvalidTime);
         assert!(clock::timestamp_ms(clock) <= campaign.end_time, EInvalidTime);
 
         let quest = vector::borrow_mut(&mut campaign.quests, quest_index);
