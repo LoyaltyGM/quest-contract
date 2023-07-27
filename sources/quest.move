@@ -32,8 +32,8 @@ module holasui_quest::quest {
     const EInvalidTime: u64 = 4;
     const EQuestAlreadyDone: u64 = 5;
     const EQuestNotDone: u64 = 6;
-    const ECampaignAlreadyDone: u64 = 7;
-    const ECampaignNotDone: u64 = 8;
+    const EJourneyAlreadyDone: u64 = 7;
+    const EJourneyNotDone: u64 = 8;
 
 
     // ======== Types =========
@@ -52,7 +52,7 @@ module holasui_quest::quest {
         id: UID,
         version: u64,
         balance: Balance<SUI>,
-        fee_for_creating_campaign: u64,
+        fee_for_creating_journey: u64,
         /// The amount of spaces that can be created by a single address
         space_creators_allowlist: Table<address, u64>,
         spaces: TableVec<ID>
@@ -66,7 +66,7 @@ module holasui_quest::quest {
         image_url: Url,
         website_url: Url,
         twitter_url: Url,
-        campaigns: ObjectTable<ID, Campaign>,
+        journeys: ObjectTable<ID, Journey>,
         points: Table<address, u64>
     }
 
@@ -76,7 +76,10 @@ module holasui_quest::quest {
         space_id: ID,
     }
 
-    struct Campaign has key, store {
+    // todo: rename to Journey
+    // todo: add field total_completed
+    // todo: add completed quests per user
+    struct Journey has key, store {
         id: UID,
         name: String,
         description: String,
@@ -89,6 +92,7 @@ module holasui_quest::quest {
         points: Table<address, u64>
     }
 
+    // todo: add field total_completed
     struct Quest has key, store {
         id: UID,
         /// The amount of points that the user gets for completing the quest
@@ -117,20 +121,20 @@ module holasui_quest::quest {
         description: String,
         image_url: Url,
         space_id: ID,
-        campaign_id: ID,
+        journey_id: ID,
     }
 
     // ======== Events =========
 
     struct QuestDone has copy, drop {
         space_id: ID,
-        campaign_id: ID,
+        journey_id: ID,
         quest_id: ID,
     }
 
-    struct CampaignDone has copy, drop {
+    struct JourneyDone has copy, drop {
         space_id: ID,
-        campaign_id: ID,
+        journey_id: ID,
     }
 
     // ======== Functions =========
@@ -168,7 +172,7 @@ module holasui_quest::quest {
             id: object::new(ctx),
             version: VERSION,
             balance: balance::zero(),
-            fee_for_creating_campaign: FEE_FOR_CREATING_CAMPAIGN,
+            fee_for_creating_journey: FEE_FOR_CREATING_CAMPAIGN,
             space_creators_allowlist: table::new(ctx),
             spaces: table_vec::empty<ID>(ctx),
         })
@@ -192,10 +196,10 @@ module holasui_quest::quest {
         }
     }
 
-    entry fun update_fee_for_creating_campaign(_: &AdminCap, hub: &mut SpaceHub, fee: u64) {
+    entry fun update_fee_for_creating_journey(_: &AdminCap, hub: &mut SpaceHub, fee: u64) {
         check_hub_version(hub);
 
-        hub.fee_for_creating_campaign = fee;
+        hub.fee_for_creating_journey = fee;
     }
 
     entry fun withdraw(_: &AdminCap, hub: &mut SpaceHub, ctx: &mut TxContext) {
@@ -240,7 +244,7 @@ module holasui_quest::quest {
             image_url: url::new_unsafe(string::to_ascii(image_url)),
             website_url: url::new_unsafe(string::to_ascii(website_url)),
             twitter_url: url::new_unsafe(string::to_ascii(twitter_url)),
-            campaigns: object_table::new(ctx),
+            journeys: object_table::new(ctx),
             points: table::new(ctx)
         };
 
@@ -291,9 +295,9 @@ module holasui_quest::quest {
         space.twitter_url = url::new_unsafe(string::to_ascii(twitter_url));
     }
 
-    // ======== Campaign functions
+    // ======== Journey functions
 
-    entry fun create_campaign(
+    entry fun create_journey(
         hub: &mut SpaceHub,
         coin: Coin<SUI>,
         admin_cap: &SpaceAdminCap,
@@ -309,9 +313,9 @@ module holasui_quest::quest {
         check_space_version(space);
         check_space_admin(admin_cap, space);
 
-        handle_payment(&mut hub.balance, coin, hub.fee_for_creating_campaign, ctx);
+        handle_payment(&mut hub.balance, coin, hub.fee_for_creating_journey, ctx);
 
-        let campaign = Campaign {
+        let journey = Journey {
             id: object::new(ctx),
             name,
             description,
@@ -324,14 +328,14 @@ module holasui_quest::quest {
             points: table::new(ctx)
         };
 
-        object_table::add(&mut space.campaigns, object::id(&campaign), campaign);
+        object_table::add(&mut space.journeys, object::id(&journey), journey);
     }
 
-    entry fun remove_campaign(admin_cap: &SpaceAdminCap, space: &mut Space, campaign_id: ID) {
+    entry fun remove_journey(admin_cap: &SpaceAdminCap, space: &mut Space, journey_id: ID) {
         check_space_version(space);
         check_space_admin(admin_cap, space);
 
-        let Campaign {
+        let Journey {
             id,
             name: _,
             description: _,
@@ -342,7 +346,7 @@ module holasui_quest::quest {
             quests,
             done,
             points,
-        } = object_table::remove(&mut space.campaigns, campaign_id);
+        } = object_table::remove(&mut space.journeys, journey_id);
 
         object_table::destroy_empty(quests);
         table::drop(done);
@@ -350,72 +354,72 @@ module holasui_quest::quest {
         object::delete(id)
     }
 
-    entry fun update_campaign_name(admin_cap: &SpaceAdminCap, space: &mut Space, campaign_id: ID, name: String) {
+    entry fun update_journey_name(admin_cap: &SpaceAdminCap, space: &mut Space, journey_id: ID, name: String) {
         check_space_version(space);
         check_space_admin(admin_cap, space);
 
-        let campaign = object_table::borrow_mut(&mut space.campaigns, campaign_id);
-        campaign.name = name;
+        let journey = object_table::borrow_mut(&mut space.journeys, journey_id);
+        journey.name = name;
     }
 
-    entry fun update_campaign_description(
+    entry fun update_journey_description(
         admin_cap: &SpaceAdminCap,
         space: &mut Space,
-        campaign_id: ID,
+        journey_id: ID,
         description: String
     ) {
         check_space_version(space);
         check_space_admin(admin_cap, space);
 
-        let campaign = object_table::borrow_mut(&mut space.campaigns, campaign_id);
-        campaign.description = description;
+        let journey = object_table::borrow_mut(&mut space.journeys, journey_id);
+        journey.description = description;
     }
 
-    entry fun update_campaign_reward_image_url(
+    entry fun update_journey_reward_image_url(
         admin_cap: &SpaceAdminCap,
         space: &mut Space,
-        campaign_id: ID,
+        journey_id: ID,
         image_url: String
     ) {
         check_space_version(space);
         check_space_admin(admin_cap, space);
 
-        let campaign = object_table::borrow_mut(&mut space.campaigns, campaign_id);
-        campaign.reward_image_url = url::new_unsafe(string::to_ascii(image_url));
+        let journey = object_table::borrow_mut(&mut space.journeys, journey_id);
+        journey.reward_image_url = url::new_unsafe(string::to_ascii(image_url));
     }
 
-    entry fun update_campaign_start_time(
+    entry fun update_journey_start_time(
         admin_cap: &SpaceAdminCap,
         space: &mut Space,
-        campaign_id: ID,
+        journey_id: ID,
         start_time: u64
     ) {
         check_space_version(space);
         check_space_admin(admin_cap, space);
 
-        let campaign = object_table::borrow_mut(&mut space.campaigns, campaign_id);
+        let journey = object_table::borrow_mut(&mut space.journeys, journey_id);
 
-        campaign.start_time = start_time;
+        journey.start_time = start_time;
     }
 
-    entry fun update_campaign_end_time(
+    entry fun update_journey_end_time(
         admin_cap: &SpaceAdminCap,
         space: &mut Space,
-        campaign_id: ID,
+        journey_id: ID,
         end_time: u64
     ) {
         check_space_version(space);
         check_space_admin(admin_cap, space);
 
-        let campaign = object_table::borrow_mut(&mut space.campaigns, campaign_id);
+        let journey = object_table::borrow_mut(&mut space.journeys, journey_id);
 
-        campaign.end_time = end_time;
+        journey.end_time = end_time;
     }
 
     entry fun create_quest(
         admin_cap: &SpaceAdminCap,
         space: &mut Space,
-        campaign_id: ID,
+        journey_id: ID,
         points_amount: u64,
         name: String,
         description: String,
@@ -429,7 +433,7 @@ module holasui_quest::quest {
         check_space_version(space);
         check_space_admin(admin_cap, space);
 
-        let campaign = object_table::borrow_mut(&mut space.campaigns, campaign_id);
+        let journey = object_table::borrow_mut(&mut space.journeys, journey_id);
 
         // todo: add event for quest creation
         let quest = Quest {
@@ -445,14 +449,14 @@ module holasui_quest::quest {
             done: table::new(ctx)
         };
 
-        object_table::add(&mut campaign.quests, object::id(&quest), quest);
+        object_table::add(&mut journey.quests, object::id(&quest), quest);
     }
 
-    entry fun remove_quest(admin_cap: &SpaceAdminCap, space: &mut Space, campaign_id: ID, quest_id: ID) {
+    entry fun remove_quest(admin_cap: &SpaceAdminCap, space: &mut Space, journey_id: ID, quest_id: ID) {
         check_space_version(space);
         check_space_admin(admin_cap, space);
 
-        let campaign = object_table::borrow_mut(&mut space.campaigns, campaign_id);
+        let journey = object_table::borrow_mut(&mut space.journeys, journey_id);
         let Quest {
             id,
             name: _,
@@ -464,7 +468,7 @@ module holasui_quest::quest {
             arguments: _,
             points_amount: _,
             done,
-        } = object_table::remove(&mut campaign.quests, quest_id);
+        } = object_table::remove(&mut journey.quests, quest_id);
 
         object::delete(id);
         table::drop(done);
@@ -475,28 +479,28 @@ module holasui_quest::quest {
     entry fun verify_quest(
         _: &Verifier,
         space: &mut Space,
-        campaign_id: ID,
+        journey_id: ID,
         quest_id: ID,
         user: address,
         clock: &Clock,
     ) {
         check_space_version(space);
 
-        let campaign = object_table::borrow_mut(&mut space.campaigns, campaign_id);
-        assert!(clock::timestamp_ms(clock) >= campaign.start_time, EInvalidTime);
-        assert!(clock::timestamp_ms(clock) <= campaign.end_time, EInvalidTime);
+        let journey = object_table::borrow_mut(&mut space.journeys, journey_id);
+        assert!(clock::timestamp_ms(clock) >= journey.start_time, EInvalidTime);
+        assert!(clock::timestamp_ms(clock) <= journey.end_time, EInvalidTime);
 
-        let quest = object_table::borrow_mut(&mut campaign.quests, quest_id);
+        let quest = object_table::borrow_mut(&mut journey.quests, quest_id);
         assert!(!table::contains(&quest.done, user), EQuestAlreadyDone);
 
         emit(QuestDone {
             space_id: object::uid_to_inner(&space.id),
-            campaign_id,
+            journey_id,
             quest_id
         });
 
         table::add(&mut quest.done, user, true);
-        update_points_table(&mut campaign.points, user, quest.points_amount);
+        update_points_table(&mut journey.points, user, quest.points_amount);
         update_points_table(&mut space.points, user, quest.points_amount);
     }
 
@@ -504,30 +508,30 @@ module holasui_quest::quest {
 
     entry fun claim_reward(
         space: &mut Space,
-        campaign_id: ID,
+        journey_id: ID,
         ctx: &mut TxContext
     ) {
         check_space_version(space);
 
-        let campaign = object_table::borrow_mut(&mut space.campaigns, campaign_id);
+        let journey = object_table::borrow_mut(&mut space.journeys, journey_id);
 
-        assert!(!table::contains(&campaign.done, sender(ctx)), ECampaignAlreadyDone);
-        let address_points = *table::borrow(&campaign.points, sender(ctx));
-        assert!(address_points >= campaign.reward_points, ECampaignNotDone);
+        assert!(!table::contains(&journey.done, sender(ctx)), EJourneyAlreadyDone);
+        let address_points = *table::borrow(&journey.points, sender(ctx));
+        assert!(address_points >= journey.reward_points, EJourneyNotDone);
 
-        emit(CampaignDone {
+        emit(JourneyDone {
             space_id: object::uid_to_inner(&space.id),
-            campaign_id
+            journey_id
         });
 
-        table::add(&mut campaign.done, sender(ctx), true);
+        table::add(&mut journey.done, sender(ctx), true);
         transfer(Reward {
             id: object::new(ctx),
-            name: campaign.name,
-            description: campaign.description,
-            image_url: campaign.reward_image_url,
+            name: journey.name,
+            description: journey.description,
+            image_url: journey.reward_image_url,
             space_id: object::id(space),
-            campaign_id
+            journey_id
         }, sender(ctx));
     }
 
