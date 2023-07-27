@@ -8,6 +8,8 @@ module holasui_quest::quest {
     use sui::display;
     use sui::event::emit;
     use sui::object::{Self, ID, UID};
+    use sui::object_table;
+    use sui::object_table::ObjectTable;
     use sui::package;
     use sui::sui::SUI;
     use sui::table::{Self, Table};
@@ -65,7 +67,7 @@ module holasui_quest::quest {
         image_url: Url,
         website_url: Url,
         twitter_url: Url,
-        campaigns: Table<ID, Campaign>,
+        campaigns: ObjectTable<ID, Campaign>,
     }
 
     struct SpaceAdminCap has key, store {
@@ -232,7 +234,7 @@ module holasui_quest::quest {
             image_url: url::new_unsafe(string::to_ascii(image_url)),
             website_url: url::new_unsafe(string::to_ascii(website_url)),
             twitter_url: url::new_unsafe(string::to_ascii(twitter_url)),
-            campaigns: table::new(ctx),
+            campaigns: object_table::new(ctx),
         };
 
         let admin_cap = SpaceAdminCap {
@@ -310,7 +312,7 @@ module holasui_quest::quest {
             done: table::new(ctx)
         };
 
-        table::add(&mut space.campaigns, object::id(&campaign), campaign);
+        object_table::add(&mut space.campaigns, object::id(&campaign), campaign);
     }
 
     entry fun remove_campaign(admin_cap: &SpaceAdminCap, space: &mut Space, campaign_id: ID) {
@@ -325,7 +327,7 @@ module holasui_quest::quest {
             end_time: _,
             quests,
             done
-        } = table::remove(&mut space.campaigns, campaign_id);
+        } = object_table::remove(&mut space.campaigns, campaign_id);
 
         vector::destroy_empty(quests);
         table::drop(done);
@@ -336,7 +338,7 @@ module holasui_quest::quest {
         check_space_version(space);
         check_space_admin(admin_cap, space);
 
-        let campaign = table::borrow_mut(&mut space.campaigns, campaign_id);
+        let campaign = object_table::borrow_mut(&mut space.campaigns, campaign_id);
         campaign.name = name;
     }
 
@@ -349,7 +351,7 @@ module holasui_quest::quest {
         check_space_version(space);
         check_space_admin(admin_cap, space);
 
-        let campaign = table::borrow_mut(&mut space.campaigns, campaign_id);
+        let campaign = object_table::borrow_mut(&mut space.campaigns, campaign_id);
         campaign.description = description;
     }
 
@@ -362,7 +364,7 @@ module holasui_quest::quest {
         check_space_version(space);
         check_space_admin(admin_cap, space);
 
-        let campaign = table::borrow_mut(&mut space.campaigns, campaign_id);
+        let campaign = object_table::borrow_mut(&mut space.campaigns, campaign_id);
         campaign.reward_image_url = url::new_unsafe(string::to_ascii(image_url));
     }
 
@@ -375,7 +377,7 @@ module holasui_quest::quest {
         check_space_version(space);
         check_space_admin(admin_cap, space);
 
-        let campaign = table::borrow_mut(&mut space.campaigns, campaign_id);
+        let campaign = object_table::borrow_mut(&mut space.campaigns, campaign_id);
 
         campaign.end_time = end_time;
     }
@@ -396,7 +398,7 @@ module holasui_quest::quest {
         check_space_version(space);
         check_space_admin(admin_cap, space);
 
-        let campaign = table::borrow_mut(&mut space.campaigns, campaign_id);
+        let campaign = object_table::borrow_mut(&mut space.campaigns, campaign_id);
 
         let quest = Quest {
             name,
@@ -416,7 +418,7 @@ module holasui_quest::quest {
         check_space_version(space);
         check_space_admin(admin_cap, space);
 
-        let campaign = table::borrow_mut(&mut space.campaigns, campaign_id);
+        let campaign = object_table::borrow_mut(&mut space.campaigns, campaign_id);
         let Quest {
             name: _,
             description: _,
@@ -443,7 +445,7 @@ module holasui_quest::quest {
     ) {
         check_space_version(space);
 
-        let campaign = table::borrow_mut(&mut space.campaigns, campaign_id);
+        let campaign = object_table::borrow_mut(&mut space.campaigns, campaign_id);
         assert!(clock::timestamp_ms(clock) <= campaign.end_time, EInvalidTime);
 
         let quest = vector::borrow_mut(&mut campaign.quests, quest_index);
@@ -468,7 +470,7 @@ module holasui_quest::quest {
     ) {
         check_space_version(space);
 
-        let campaign = table::borrow_mut(&mut space.campaigns, campaign_id);
+        let campaign = object_table::borrow_mut(&mut space.campaigns, campaign_id);
 
         assert!(clock::timestamp_ms(clock) <= campaign.end_time, EInvalidTime);
         assert!(!table::contains(&campaign.done, sender(ctx)), ECampaignAlreadyDone);
