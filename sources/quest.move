@@ -33,6 +33,7 @@ module holasui_quest::quest {
     const EQuestAlreadyDone: u64 = 5;
     const EQuestNotDone: u64 = 6;
     const ECampaignAlreadyDone: u64 = 7;
+    const ECampaignNotDone: u64 = 8;
 
 
     // ======== Types =========
@@ -66,6 +67,7 @@ module holasui_quest::quest {
         website_url: Url,
         twitter_url: Url,
         campaigns: ObjectTable<ID, Campaign>,
+        points: Table<address, u64>
     }
 
     struct SpaceAdminCap has key, store {
@@ -78,15 +80,19 @@ module holasui_quest::quest {
         id: UID,
         name: String,
         description: String,
-        reward_image_url: Url,
         start_time: u64,
         end_time: u64,
+        reward_image_url: Url,
+        reward_points: u64,
         quests: ObjectTable<ID, Quest>,
-        done: Table<address, bool>
+        done: Table<address, bool>,
+        points: Table<address, u64>
     }
 
     struct Quest has key, store {
         id: UID,
+        /// The amount of points that the user gets for completing the quest
+        points_amount: u64,
         /// The name of the quest
         name: String,
         /// The description of the quest
@@ -235,6 +241,7 @@ module holasui_quest::quest {
             website_url: url::new_unsafe(string::to_ascii(website_url)),
             twitter_url: url::new_unsafe(string::to_ascii(twitter_url)),
             campaigns: object_table::new(ctx),
+            points: table::new(ctx)
         };
 
         let admin_cap = SpaceAdminCap {
@@ -293,9 +300,10 @@ module holasui_quest::quest {
         space: &mut Space,
         name: String,
         description: String,
-        image_url: String,
         start_time: u64,
         end_time: u64,
+        reward_image_url: String,
+        reward_points: u64,
         ctx: &mut TxContext
     ) {
         check_space_version(space);
@@ -307,11 +315,13 @@ module holasui_quest::quest {
             id: object::new(ctx),
             name,
             description,
-            reward_image_url: url::new_unsafe(string::to_ascii(image_url)),
             start_time,
             end_time,
+            reward_image_url: url::new_unsafe(string::to_ascii(reward_image_url)),
+            reward_points,
             quests: object_table::new(ctx),
-            done: table::new(ctx)
+            done: table::new(ctx),
+            points: table::new(ctx)
         };
 
         object_table::add(&mut space.campaigns, object::id(&campaign), campaign);
@@ -325,15 +335,18 @@ module holasui_quest::quest {
             id,
             name: _,
             description: _,
-            reward_image_url: _,
             start_time: _,
             end_time: _,
+            reward_image_url: _,
+            reward_points: _,
             quests,
-            done
+            done,
+            points,
         } = object_table::remove(&mut space.campaigns, campaign_id);
 
         object_table::destroy_empty(quests);
         table::drop(done);
+        table::drop(points);
         object::delete(id)
     }
 
@@ -389,6 +402,7 @@ module holasui_quest::quest {
         admin_cap: &SpaceAdminCap,
         space: &mut Space,
         campaign_id: ID,
+        points_amount: u64,
         name: String,
         description: String,
         call_to_action_url: String,
@@ -406,6 +420,7 @@ module holasui_quest::quest {
         // todo: add event for quest creation
         let quest = Quest {
             id: object::new(ctx),
+            points_amount,
             name,
             description,
             call_to_action_url: url::new_unsafe(string::to_ascii(call_to_action_url)),
@@ -433,6 +448,7 @@ module holasui_quest::quest {
             module_name: _,
             function_name: _,
             arguments: _,
+            points_amount: _,
             done,
         } = object_table::remove(&mut campaign.quests, quest_id);
 
@@ -466,6 +482,8 @@ module holasui_quest::quest {
         });
 
         table::add(&mut quest.done, user, true);
+        update_points_table(&mut campaign.points, user, quest.points_amount);
+        update_points_table(&mut space.points, user, quest.points_amount);
     }
 
     // ======== User functions =========
@@ -473,16 +491,15 @@ module holasui_quest::quest {
     entry fun claim_campaign_reward(
         space: &mut Space,
         campaign_id: ID,
-        clock: &Clock,
         ctx: &mut TxContext
     ) {
         check_space_version(space);
 
         let campaign = object_table::borrow_mut(&mut space.campaigns, campaign_id);
 
-        assert!(clock::timestamp_ms(clock) <= campaign.end_time, EInvalidTime);
         assert!(!table::contains(&campaign.done, sender(ctx)), ECampaignAlreadyDone);
-        check_campaign_quests_done(campaign, sender(ctx));
+        let address_points = *table::borrow(&campaign.points, sender(ctx));
+        assert!(address_points >= campaign.reward_points, ECampaignNotDone);
 
         emit(CampaignDone {
             space_id: object::uid_to_inner(&space.id),
@@ -513,18 +530,14 @@ module holasui_quest::quest {
         *current_allowed_spaces_amount = *current_allowed_spaces_amount - 1;
     }
 
-    // todo: change way to check if all quests are done
-    fun check_campaign_quests_done(campaign: &Campaign, address: address) {
-        let quests = &campaign.quests;
-
-        let i = 0;
-        // while (i < vector::length(quests)) {
-        //     let quest = vector::borrow(quests, i);
-        //     assert!(table::contains(&quest.done, address), EQuestNotDone);
-        //     i = i + 1;
-        // }
+    fun update_points_table(points: &mut Table<address, u64>, address: address, points_amount: u64) {
+        if (!table::contains(points, address)) {
+            table::add(points, address, points_amount);
+        } else {
+            let current_points_amount = table::borrow_mut(points, address);
+            *current_points_amount = *current_points_amount + points_amount;
+        }
     }
-
 
     fun check_hub_version(hub: &SpaceHub) {
         assert!(hub.version == VERSION, EWrongVersion);
