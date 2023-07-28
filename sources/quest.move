@@ -125,7 +125,19 @@ module holasui_quest::quest {
 
     // ======== Events =========
 
-    struct QuestDone has copy, drop {
+    struct QuestCreated has copy, drop {
+        space_id: ID,
+        journey_id: ID,
+        quest_id: ID,
+    }
+
+    struct QuestRemoved has copy, drop {
+        space_id: ID,
+        journey_id: ID,
+        quest_id: ID,
+    }
+
+    struct QuestVerified has copy, drop {
         space_id: ID,
         journey_id: ID,
         quest_id: ID,
@@ -434,7 +446,6 @@ module holasui_quest::quest {
 
         let journey = object_table::borrow_mut(&mut space.journeys, journey_id);
 
-        // todo: add event for quest creation
         let quest = Quest {
             id: object::new(ctx),
             points_amount,
@@ -447,6 +458,12 @@ module holasui_quest::quest {
             arguments,
             done: table::new(ctx)
         };
+
+        emit(QuestCreated {
+            space_id: object::uid_to_inner(&space.id),
+            journey_id,
+            quest_id: object::uid_to_inner(&quest.id)
+        });
 
         object_table::add(&mut journey.quests, object::id(&quest), quest);
     }
@@ -468,6 +485,12 @@ module holasui_quest::quest {
             points_amount: _,
             done,
         } = object_table::remove(&mut journey.quests, quest_id);
+
+        emit(QuestRemoved {
+            space_id: object::uid_to_inner(&space.id),
+            journey_id,
+            quest_id: object::uid_to_inner(&id)
+        });
 
         object::delete(id);
         table::drop(done);
@@ -492,7 +515,7 @@ module holasui_quest::quest {
         let quest = object_table::borrow_mut(&mut journey.quests, quest_id);
         assert!(!table::contains(&quest.done, user), EQuestAlreadyDone);
 
-        emit(QuestDone {
+        emit(QuestVerified {
             space_id: object::uid_to_inner(&space.id),
             journey_id,
             quest_id
