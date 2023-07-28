@@ -288,7 +288,11 @@ module holasui_quest::quest {
         ctx: &mut TxContext
     ) {
         check_hub_version(hub);
-        handle_space_create(hub, sender(ctx));
+
+        assert!(table::contains(&hub.space_creators_allowlist, sender(ctx)) &&
+            *table::borrow(&hub.space_creators_allowlist, sender(ctx)) > 0,
+            ENotSpaceCreator
+        );
 
         let space = Space {
             id: object::new(ctx),
@@ -311,6 +315,9 @@ module holasui_quest::quest {
         emit(SpaceCreated {
             space_id: object::uid_to_inner(&space.id)
         });
+
+        let current_allowed_spaces_amount = table::borrow_mut(&mut hub.space_creators_allowlist, sender(ctx));
+        *current_allowed_spaces_amount = *current_allowed_spaces_amount - 1;
 
         table_vec::push_back(&mut hub.spaces, object::id(&space));
         share_object(space);
@@ -627,16 +634,6 @@ module holasui_quest::quest {
 
 
     // ======== Utility functions =========
-
-    fun handle_space_create(hub: &mut SpaceHub, creator: address) {
-        assert!(table::contains(&hub.space_creators_allowlist, creator) &&
-            *table::borrow(&hub.space_creators_allowlist, creator) > 0,
-            ENotSpaceCreator
-        );
-
-        let current_allowed_spaces_amount = table::borrow_mut(&mut hub.space_creators_allowlist, creator);
-        *current_allowed_spaces_amount = *current_allowed_spaces_amount - 1;
-    }
 
     fun update_address_to_u64_table(table: &mut Table<address, u64>, address: address, amount: u64) {
         if (!table::contains(table, address)) {
