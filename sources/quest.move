@@ -139,6 +139,12 @@ module holasui_quest::quest {
         journey_id: ID,
     }
 
+    struct JourneyDone has copy, drop {
+        space_id: ID,
+        journey_id: ID,
+        address: address,
+    }
+
     struct QuestCreated has copy, drop {
         space_id: ID,
         journey_id: ID,
@@ -151,15 +157,11 @@ module holasui_quest::quest {
         quest_id: ID,
     }
 
-    struct QuestVerified has copy, drop {
+    struct QuestDone has copy, drop {
         space_id: ID,
         journey_id: ID,
         quest_id: ID,
-    }
-
-    struct JourneyDone has copy, drop {
-        space_id: ID,
-        journey_id: ID,
+        address: address,
     }
 
     // ======== Functions =========
@@ -530,7 +532,7 @@ module holasui_quest::quest {
         space: &mut Space,
         journey_id: ID,
         quest_id: ID,
-        user: address,
+        address: address,
         clock: &Clock,
     ) {
         check_space_version(space);
@@ -540,17 +542,18 @@ module holasui_quest::quest {
         assert!(clock::timestamp_ms(clock) <= journey.end_time, EInvalidTime);
 
         let quest = object_table::borrow_mut(&mut journey.quests, quest_id);
-        assert!(!table::contains(&quest.done, user), EQuestAlreadyDone);
+        assert!(!table::contains(&quest.done, address), EQuestAlreadyDone);
 
-        emit(QuestVerified {
+        emit(QuestDone {
             space_id: object::uid_to_inner(&space.id),
             journey_id,
-            quest_id
+            quest_id,
+            address
         });
 
-        table::add(&mut quest.done, user, true);
-        update_points_table(&mut journey.points, user, quest.points_amount);
-        update_points_table(&mut space.points, user, quest.points_amount);
+        table::add(&mut quest.done, address, true);
+        update_points_table(&mut journey.points, address, quest.points_amount);
+        update_points_table(&mut space.points, address, quest.points_amount);
     }
 
     // ======== User functions =========
@@ -570,7 +573,8 @@ module holasui_quest::quest {
 
         emit(JourneyDone {
             space_id: object::uid_to_inner(&space.id),
-            journey_id
+            journey_id,
+            address: sender(ctx)
         });
 
         table::add(&mut journey.done, sender(ctx), true);
