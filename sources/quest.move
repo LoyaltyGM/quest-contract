@@ -125,6 +125,16 @@ module holasui_quest::quest {
 
     // ======== Events =========
 
+    struct JourneyCreated has copy, drop {
+        space_id: ID,
+        journey_id: ID,
+    }
+
+    struct JourneyRemoved has copy, drop {
+        space_id: ID,
+        journey_id: ID,
+    }
+
     struct QuestCreated has copy, drop {
         space_id: ID,
         journey_id: ID,
@@ -339,6 +349,11 @@ module holasui_quest::quest {
             points: table::new(ctx)
         };
 
+        emit(JourneyCreated {
+            space_id: object::uid_to_inner(&space.id),
+            journey_id: object::uid_to_inner(&journey.id)
+        });
+
         object_table::add(&mut space.journeys, object::id(&journey), journey);
     }
 
@@ -358,6 +373,11 @@ module holasui_quest::quest {
             done,
             points,
         } = object_table::remove(&mut space.journeys, journey_id);
+
+        emit(JourneyRemoved {
+            space_id: object::uid_to_inner(&space.id),
+            journey_id: object::uid_to_inner(&id)
+        });
 
         object_table::destroy_empty(quests);
         table::drop(done);
