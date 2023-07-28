@@ -91,9 +91,10 @@ module holasui_quest::quest {
         points: Table<address, u64>
     }
 
-    // todo: add field total_completed
     struct Quest has key, store {
         id: UID,
+        /// The amount of users that have completed the quest
+        total_done: u64,
         /// The amount of points that the user gets for completing the quest
         points_amount: u64,
         /// The name of the quest
@@ -477,6 +478,7 @@ module holasui_quest::quest {
 
         let quest = Quest {
             id: object::new(ctx),
+            total_done: 0,
             points_amount,
             name,
             description,
@@ -504,6 +506,8 @@ module holasui_quest::quest {
         let journey = object_table::borrow_mut(&mut space.journeys, journey_id);
         let Quest {
             id,
+            total_done: _,
+            points_amount: _,
             name: _,
             description: _,
             call_to_action_url: _,
@@ -511,7 +515,6 @@ module holasui_quest::quest {
             module_name: _,
             function_name: _,
             arguments: _,
-            points_amount: _,
             done,
         } = object_table::remove(&mut journey.quests, quest_id);
 
@@ -551,6 +554,7 @@ module holasui_quest::quest {
             address
         });
 
+        quest.total_done = quest.total_done + 1;
         table::add(&mut quest.done, address, true);
         update_points_table(&mut journey.points, address, quest.points_amount);
         update_points_table(&mut space.points, address, quest.points_amount);
