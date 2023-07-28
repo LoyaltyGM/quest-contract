@@ -545,7 +545,7 @@ module holasui_quest::quest {
 
     // ======== Verifier functions =========
 
-    entry fun verify_quest(
+    entry fun complete_quest(
         _: &Verifier,
         space: &mut Space,
         journey_id: ID,
@@ -577,7 +577,7 @@ module holasui_quest::quest {
 
     // ======== User functions =========
 
-    entry fun claim_reward(
+    entry fun complete_journey(
         space: &mut Space,
         journey_id: ID,
         ctx: &mut TxContext
