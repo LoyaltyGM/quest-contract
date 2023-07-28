@@ -125,6 +125,10 @@ module holasui_quest::quest {
 
     // ======== Events =========
 
+    struct SpaceCreated has copy, drop {
+        space_id: ID,
+    }
+
     struct JourneyCreated has copy, drop {
         space_id: ID,
         journey_id: ID,
@@ -275,8 +279,11 @@ module holasui_quest::quest {
             space_id: object::id(&space),
         };
 
-        table_vec::push_back(&mut hub.spaces, object::id(&space));
+        emit(SpaceCreated {
+            space_id: object::uid_to_inner(&space.id)
+        });
 
+        table_vec::push_back(&mut hub.spaces, object::id(&space));
         share_object(space);
         public_transfer(admin_cap, sender(ctx));
     }
