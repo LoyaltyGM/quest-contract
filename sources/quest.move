@@ -93,8 +93,6 @@ module holasui_quest::quest {
 
     struct Quest has key, store {
         id: UID,
-        /// The amount of users that have completed the quest
-        total_done: u64,
         /// The amount of points that the user gets for completing the quest
         points_amount: u64,
         /// The name of the quest
@@ -112,6 +110,10 @@ module holasui_quest::quest {
         /// The arguments that need to be passed to the function
         arguments: vector<String>,
 
+        /// The amount of users that have completed the quest
+        total_done: u64,
+
+        /// The addresses of the users that have completed the quest
         done: Table<address, bool>
     }
 
