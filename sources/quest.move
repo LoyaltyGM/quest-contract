@@ -50,23 +50,35 @@ module holasui_quest::quest {
 
     struct SpaceHub has key {
         id: UID,
+        /// The version of the hub
         version: u64,
+        /// The balance of the hub
         balance: Balance<SUI>,
+        /// The amount of SUI that needs to be paid to create a journey
         fee_for_creating_journey: u64,
         /// The amount of spaces that can be created by a single address
         space_creators_allowlist: Table<address, u64>,
+        /// The spaces that have been created
         spaces: TableVec<ID>
     }
 
     struct Space has key {
         id: UID,
+        /// The version of the space
         version: u64,
+        /// The name of the space
         name: String,
+        /// The description of the space
         description: String,
+        /// Link to the image of the space
         image_url: Url,
+        /// Link to the website of the space
         website_url: Url,
+        /// Link to the twitter of the space
         twitter_url: Url,
+        /// The journeys that are part of the space
         journeys: ObjectTable<ID, Journey>,
+        /// The amount of points that each user has earned in the space
         points: Table<address, u64>
     }
 
