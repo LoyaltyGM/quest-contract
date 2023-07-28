@@ -30,10 +30,10 @@ module holasui_quest::quest {
     const ENotSpaceCreator: u64 = 2;
     const ENotSpaceAdmin: u64 = 3;
     const EInvalidTime: u64 = 4;
-    const EQuestAlreadyDone: u64 = 5;
-    const EQuestNotDone: u64 = 6;
-    const EJourneyAlreadyDone: u64 = 7;
-    const EJourneyNotDone: u64 = 8;
+    const EQuestAlreadyCompleted: u64 = 5;
+    const EQuestNotCompleted: u64 = 6;
+    const EJourneyAlreadyCompleted: u64 = 7;
+    const EJourneyNotCompleted: u64 = 8;
 
 
     // ======== Types =========
@@ -93,13 +93,13 @@ module holasui_quest::quest {
         reward_image_url: Url,
 
         /// The amount of users that have completed the journey
-        total_done: u64,
+        total_completed: u64,
         /// Quests that are part of the journey
         quests: ObjectTable<ID, Quest>,
         /// The addresses of the users that have completed the journey
-        done: Table<address, bool>,
+        completed_users: Table<address, bool>,
         /// The amount of points that each user has earned in the journey
-        points: Table<address, u64>
+        users_points: Table<address, u64>
     }
 
     struct Quest has key, store {
@@ -122,10 +122,10 @@ module holasui_quest::quest {
         arguments: vector<String>,
 
         /// The amount of users that have completed the quest
-        total_done: u64,
+        total_completed: u64,
 
         /// The addresses of the users that have completed the quest
-        done: Table<address, bool>
+        completed_users: Table<address, bool>
     }
 
     struct Reward has key, store {
@@ -153,7 +153,7 @@ module holasui_quest::quest {
         journey_id: ID,
     }
 
-    struct JourneyDone has copy, drop {
+    struct JourneyCompleted has copy, drop {
         space_id: ID,
         journey_id: ID,
         address: address,
@@ -171,7 +171,7 @@ module holasui_quest::quest {
         quest_id: ID,
     }
 
-    struct QuestDone has copy, drop {
+    struct QuestCompleted has copy, drop {
         space_id: ID,
         journey_id: ID,
         quest_id: ID,
@@ -367,10 +367,10 @@ module holasui_quest::quest {
             start_time,
             end_time,
             reward_image_url: url::new_unsafe(string::to_ascii(reward_image_url)),
-            total_done: 0,
+            total_completed: 0,
             quests: object_table::new(ctx),
-            done: table::new(ctx),
-            points: table::new(ctx)
+            completed_users: table::new(ctx),
+            users_points: table::new(ctx)
         };
 
         emit(JourneyCreated {
@@ -393,10 +393,10 @@ module holasui_quest::quest {
             start_time: _,
             end_time: _,
             reward_image_url: _,
-            total_done: _,
+            total_completed: _,
             quests,
-            done,
-            points,
+            completed_users,
+            users_points,
         } = object_table::remove(&mut space.journeys, journey_id);
 
         emit(JourneyRemoved {
@@ -405,8 +405,8 @@ module holasui_quest::quest {
         });
 
         object_table::destroy_empty(quests);
-        table::drop(done);
-        table::drop(points);
+        table::drop(completed_users);
+        table::drop(users_points);
         object::delete(id)
     }
 
@@ -493,7 +493,7 @@ module holasui_quest::quest {
 
         let quest = Quest {
             id: object::new(ctx),
-            total_done: 0,
+            total_completed: 0,
             points_amount,
             name,
             description,
@@ -502,7 +502,7 @@ module holasui_quest::quest {
             module_name,
             function_name,
             arguments,
-            done: table::new(ctx)
+            completed_users: table::new(ctx)
         };
 
         emit(QuestCreated {
@@ -521,7 +521,7 @@ module holasui_quest::quest {
         let journey = object_table::borrow_mut(&mut space.journeys, journey_id);
         let Quest {
             id,
-            total_done: _,
+            total_completed: _,
             points_amount: _,
             name: _,
             description: _,
@@ -530,7 +530,7 @@ module holasui_quest::quest {
             module_name: _,
             function_name: _,
             arguments: _,
-            done,
+            completed_users,
         } = object_table::remove(&mut journey.quests, quest_id);
 
         emit(QuestRemoved {
@@ -540,7 +540,7 @@ module holasui_quest::quest {
         });
 
         object::delete(id);
-        table::drop(done);
+        table::drop(completed_users);
     }
 
     // ======== Verifier functions =========
@@ -560,18 +560,18 @@ module holasui_quest::quest {
         assert!(clock::timestamp_ms(clock) <= journey.end_time, EInvalidTime);
 
         let quest = object_table::borrow_mut(&mut journey.quests, quest_id);
-        assert!(!table::contains(&quest.done, address), EQuestAlreadyDone);
+        assert!(!table::contains(&quest.completed_users, address), EQuestAlreadyCompleted);
 
-        emit(QuestDone {
+        emit(QuestCompleted {
             space_id: object::uid_to_inner(&space.id),
             journey_id,
             quest_id,
             address
         });
 
-        quest.total_done = quest.total_done + 1;
-        table::add(&mut quest.done, address, true);
-        update_points_table(&mut journey.points, address, quest.points_amount);
+        quest.total_completed = quest.total_completed + 1;
+        table::add(&mut quest.completed_users, address, true);
+        update_points_table(&mut journey.users_points, address, quest.points_amount);
         update_points_table(&mut space.points, address, quest.points_amount);
     }
 
@@ -586,18 +586,18 @@ module holasui_quest::quest {
 
         let journey = object_table::borrow_mut(&mut space.journeys, journey_id);
 
-        assert!(!table::contains(&journey.done, sender(ctx)), EJourneyAlreadyDone);
-        let address_points = *table::borrow(&journey.points, sender(ctx));
-        assert!(address_points >= journey.reward_points, EJourneyNotDone);
+        assert!(!table::contains(&journey.completed_users, sender(ctx)), EJourneyAlreadyCompleted);
+        let address_points = *table::borrow(&journey.users_points, sender(ctx));
+        assert!(address_points >= journey.reward_points, EJourneyNotCompleted);
 
-        emit(JourneyDone {
+        emit(JourneyCompleted {
             space_id: object::uid_to_inner(&space.id),
             journey_id,
             address: sender(ctx)
         });
 
-        journey.total_done = journey.total_done + 1;
-        table::add(&mut journey.done, sender(ctx), true);
+        journey.total_completed = journey.total_completed + 1;
+        table::add(&mut journey.completed_users, sender(ctx), true);
         transfer(Reward {
             id: object::new(ctx),
             name: journey.name,
