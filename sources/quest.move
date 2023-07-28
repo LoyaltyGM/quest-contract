@@ -156,7 +156,7 @@ module holasui_quest::quest {
     struct JourneyCompleted has copy, drop {
         space_id: ID,
         journey_id: ID,
-        address: address,
+        user: address,
     }
 
     struct QuestCreated has copy, drop {
@@ -175,7 +175,7 @@ module holasui_quest::quest {
         space_id: ID,
         journey_id: ID,
         quest_id: ID,
-        address: address,
+        user: address,
     }
 
     // ======== Functions =========
@@ -550,7 +550,7 @@ module holasui_quest::quest {
         space: &mut Space,
         journey_id: ID,
         quest_id: ID,
-        address: address,
+        user: address,
         clock: &Clock,
     ) {
         check_space_version(space);
@@ -560,19 +560,19 @@ module holasui_quest::quest {
         assert!(clock::timestamp_ms(clock) <= journey.end_time, EInvalidTime);
 
         let quest = object_table::borrow_mut(&mut journey.quests, quest_id);
-        assert!(!table::contains(&quest.completed_users, address), EQuestAlreadyCompleted);
+        assert!(!table::contains(&quest.completed_users, user), EQuestAlreadyCompleted);
 
         emit(QuestCompleted {
             space_id: object::uid_to_inner(&space.id),
             journey_id,
             quest_id,
-            address
+            user
         });
 
         quest.total_completed = quest.total_completed + 1;
-        table::add(&mut quest.completed_users, address, true);
-        update_points_table(&mut journey.users_points, address, quest.points_amount);
-        update_points_table(&mut space.points, address, quest.points_amount);
+        table::add(&mut quest.completed_users, user, true);
+        update_points_table(&mut journey.users_points, user, quest.points_amount);
+        update_points_table(&mut space.points, user, quest.points_amount);
     }
 
     // ======== User functions =========
@@ -593,7 +593,7 @@ module holasui_quest::quest {
         emit(JourneyCompleted {
             space_id: object::uid_to_inner(&space.id),
             journey_id,
-            address: sender(ctx)
+            user: sender(ctx)
         });
 
         journey.total_completed = journey.total_completed + 1;
