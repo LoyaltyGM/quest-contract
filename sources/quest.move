@@ -76,7 +76,6 @@ module holasui_quest::quest {
         space_id: ID,
     }
 
-    // todo: add completed quests per user
     struct Journey has key, store {
         id: UID,
         /// The amount of points that the user gets for completing the journey and claiming the reward
@@ -99,7 +98,9 @@ module holasui_quest::quest {
         /// The addresses of the users that have completed the journey
         completed_users: Table<address, bool>,
         /// The amount of points that each user has earned in the journey
-        users_points: Table<address, u64>
+        users_points: Table<address, u64>,
+        /// The amount of quests that each user has completed in the journey
+        users_completed_quests: Table<address, u64>
     }
 
     struct Quest has key, store {
@@ -370,7 +371,8 @@ module holasui_quest::quest {
             total_completed: 0,
             quests: object_table::new(ctx),
             completed_users: table::new(ctx),
-            users_points: table::new(ctx)
+            users_points: table::new(ctx),
+            users_completed_quests: table::new(ctx)
         };
 
         emit(JourneyCreated {
@@ -397,6 +399,7 @@ module holasui_quest::quest {
             quests,
             completed_users,
             users_points,
+            users_completed_quests
         } = object_table::remove(&mut space.journeys, journey_id);
 
         emit(JourneyRemoved {
@@ -407,6 +410,7 @@ module holasui_quest::quest {
         object_table::destroy_empty(quests);
         table::drop(completed_users);
         table::drop(users_points);
+        table::drop(users_completed_quests);
         object::delete(id)
     }
 
@@ -571,8 +575,9 @@ module holasui_quest::quest {
 
         quest.total_completed = quest.total_completed + 1;
         table::add(&mut quest.completed_users, user, true);
-        update_points_table(&mut journey.users_points, user, quest.points_amount);
-        update_points_table(&mut space.points, user, quest.points_amount);
+        update_address_to_u64_table(&mut journey.users_points, user, quest.points_amount);
+        update_address_to_u64_table(&mut journey.users_completed_quests, user, 1);
+        update_address_to_u64_table(&mut space.points, user, quest.points_amount);
     }
 
     // ======== User functions =========
@@ -621,12 +626,12 @@ module holasui_quest::quest {
         *current_allowed_spaces_amount = *current_allowed_spaces_amount - 1;
     }
 
-    fun update_points_table(points: &mut Table<address, u64>, address: address, points_amount: u64) {
-        if (!table::contains(points, address)) {
-            table::add(points, address, points_amount);
+    fun update_address_to_u64_table(table: &mut Table<address, u64>, address: address, amount: u64) {
+        if (!table::contains(table, address)) {
+            table::add(table, address, amount);
         } else {
-            let current_points_amount = table::borrow_mut(points, address);
-            *current_points_amount = *current_points_amount + points_amount;
+            let current_points_amount = table::borrow_mut(table, address);
+            *current_points_amount = *current_points_amount + amount;
         }
     }
 
