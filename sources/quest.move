@@ -76,18 +76,29 @@ module holasui_quest::quest {
         space_id: ID,
     }
 
-    // todo: add field total_completed
     // todo: add completed quests per user
     struct Journey has key, store {
         id: UID,
-        name: String,
-        description: String,
-        start_time: u64,
-        end_time: u64,
-        reward_image_url: Url,
+        /// The amount of points that the user gets for completing the journey and claiming the reward
         reward_points: u64,
+        /// The name of the journey
+        name: String,
+        /// The description of the journey
+        description: String,
+        /// The time when the journey starts
+        start_time: u64,
+        /// The time when the journey ends
+        end_time: u64,
+        /// Link to the image of the reward
+        reward_image_url: Url,
+
+        /// The amount of users that have completed the journey
+        total_done: u64,
+        /// Quests that are part of the journey
         quests: ObjectTable<ID, Quest>,
+        /// The addresses of the users that have completed the journey
         done: Table<address, bool>,
+        /// The amount of points that each user has earned in the journey
         points: Table<address, u64>
     }
 
@@ -350,12 +361,13 @@ module holasui_quest::quest {
 
         let journey = Journey {
             id: object::new(ctx),
+            reward_points,
             name,
             description,
             start_time,
             end_time,
             reward_image_url: url::new_unsafe(string::to_ascii(reward_image_url)),
-            reward_points,
+            total_done: 0,
             quests: object_table::new(ctx),
             done: table::new(ctx),
             points: table::new(ctx)
@@ -375,12 +387,13 @@ module holasui_quest::quest {
 
         let Journey {
             id,
+            reward_points: _,
             name: _,
             description: _,
             start_time: _,
             end_time: _,
             reward_image_url: _,
-            reward_points: _,
+            total_done: _,
             quests,
             done,
             points,
@@ -583,6 +596,7 @@ module holasui_quest::quest {
             address: sender(ctx)
         });
 
+        journey.total_done = journey.total_done + 1;
         table::add(&mut journey.done, sender(ctx), true);
         transfer(Reward {
             id: object::new(ctx),
