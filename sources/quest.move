@@ -76,7 +76,6 @@ module holasui_quest::quest {
         space_id: ID,
     }
 
-    // todo: rename to Journey
     // todo: add field total_completed
     // todo: add completed quests per user
     struct Journey has key, store {
