@@ -103,6 +103,8 @@ module holasui_quest::quest {
         /// Link to the image of the reward
         reward_image_url: Url,
 
+        //todo: add reward type
+        // reward_type: u64,
         /// The amount of users that have completed the journey
         total_completed: u64,
         /// Quests that are part of the journey
