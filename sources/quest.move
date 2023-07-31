@@ -259,7 +259,7 @@ module holasui_quest::quest {
 
     // ======== Admin functions =========
 
-    entry fun add_space_creator(
+    public entry fun add_space_creator(
         _: &AdminCap,
         hub: &mut SpaceHub,
         creator: address,
@@ -678,6 +678,11 @@ module holasui_quest::quest {
         }
     }
 
+    // ======== View functions =========
+
+    public fun get_available_spaces(hub: &SpaceHub, user: address): u64 {
+        *table::borrow(&hub.space_creators_allowlist, user)
+    }
 
     // ======== Utility functions =========
 
@@ -700,5 +705,29 @@ module holasui_quest::quest {
 
     fun check_space_admin(admin_cap: &SpaceAdminCap, space: &Space) {
         assert!(admin_cap.space_id == object::id(space), ENotSpaceAdmin);
+    }
+
+    // ======== Test functions =========
+    #[test_only]
+    public fun test_new_space_hub(ctx: &mut TxContext) {
+        share_object(SpaceHub {
+            id: object::new(ctx),
+            version: VERSION,
+            balance: balance::zero(),
+            fee_for_creating_journey: FEE_FOR_CREATING_CAMPAIGN,
+            space_creators_allowlist: table::new(ctx),
+            spaces: table_vec::empty<ID>(ctx),
+        })
+    }
+
+    #[test_only]
+    public fun test_new_admin_cap(ctx: &mut TxContext): AdminCap {
+        AdminCap { id: object::new(ctx) }
+    }
+
+    #[test_only]
+    public fun test_destroy_admin_cap(cap: AdminCap) {
+        let AdminCap { id } = cap;
+        object::delete(id)
     }
 }
