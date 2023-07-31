@@ -20,7 +20,9 @@ module holasui_quest::quest {
 
     // ======== Constants =========
 
-    const VERSION: u64 = 1;
+    const VERSION: u64 = 0;
+    const REWARD_TYPE_NFT: u64 = 0;
+    const REWARD_TYPE_SOULBOUND: u64 = 1;
     const FEE_FOR_CREATING_CAMPAIGN: u64 = 1000000000;
 
     // ======== Errors =========
@@ -34,6 +36,7 @@ module holasui_quest::quest {
     const EQuestNotCompleted: u64 = 6;
     const EJourneyAlreadyCompleted: u64 = 7;
     const EJourneyNotCompleted: u64 = 8;
+    const EInvalidRewardType: u64 = 9;
 
 
     // ======== Types =========
@@ -90,8 +93,12 @@ module holasui_quest::quest {
 
     struct Journey has key, store {
         id: UID,
+        /// Type of the reward that the user gets for completing the journey. NFT or Soulbound
+        reward_type: u64,
         /// The amount of points that the user gets for completing the journey and claiming the reward
-        reward_points: u64,
+        reward_required_points: u64,
+        /// Link to the image of the reward
+        reward_image_url: Url,
         /// The name of the journey
         name: String,
         /// The description of the journey
@@ -100,8 +107,6 @@ module holasui_quest::quest {
         start_time: u64,
         /// The time when the journey ends
         end_time: u64,
-        /// Link to the image of the reward
-        reward_image_url: Url,
 
         //todo: add reward type
         // reward_type: u64,
@@ -143,13 +148,24 @@ module holasui_quest::quest {
         completed_users: Table<address, bool>
     }
 
-    struct Reward has key, store {
+    struct NftReward has key, store {
         id: UID,
         name: String,
         description: String,
         image_url: Url,
         space_id: ID,
         journey_id: ID,
+        claimer: address,
+    }
+
+    struct SoulboundReward has key {
+        id: UID,
+        name: String,
+        description: String,
+        image_url: Url,
+        space_id: ID,
+        journey_id: ID,
+        claimer: address,
     }
 
     // ======== Events =========
@@ -211,13 +227,20 @@ module holasui_quest::quest {
             utf8(b"{image_url}"),
             utf8(b"https://www.holasui.app")
         ];
-        let reward_display = display::new_with_fields<Reward>(
-            &publisher, reward_keys, reward_values, ctx
+
+        let nft_reward_display = display::new_with_fields<NftReward>(
+            &publisher, *&reward_keys, *&reward_values, ctx
         );
-        display::update_version(&mut reward_display);
+        display::update_version(&mut nft_reward_display);
+
+        let soulbound_reward_display = display::new_with_fields<SoulboundReward>(
+            &publisher, *&reward_keys, *&reward_values, ctx
+        );
+        display::update_version(&mut soulbound_reward_display);
 
         public_transfer(publisher, sender(ctx));
-        public_transfer(reward_display, sender(ctx));
+        public_transfer(nft_reward_display, sender(ctx));
+        public_transfer(soulbound_reward_display, sender(ctx));
         public_transfer(AdminCap {
             id: object::new(ctx),
         }, sender(ctx));
@@ -368,27 +391,31 @@ module holasui_quest::quest {
         coin: Coin<SUI>,
         admin_cap: &SpaceAdminCap,
         space: &mut Space,
+        reward_type: u64,
+        reward_image_url: String,
+        reward_required_points: u64,
         name: String,
         description: String,
         start_time: u64,
         end_time: u64,
-        reward_image_url: String,
-        reward_points: u64,
         ctx: &mut TxContext
     ) {
         check_space_version(space);
         check_space_admin(admin_cap, space);
 
+        assert!(reward_type == REWARD_TYPE_NFT || reward_type == REWARD_TYPE_SOULBOUND, EInvalidRewardType);
+
         handle_payment(&mut hub.balance, coin, hub.fee_for_creating_journey, ctx);
 
         let journey = Journey {
             id: object::new(ctx),
-            reward_points,
+            reward_type,
+            reward_required_points,
+            reward_image_url: url::new_unsafe(string::to_ascii(reward_image_url)),
             name,
             description,
             start_time,
             end_time,
-            reward_image_url: url::new_unsafe(string::to_ascii(reward_image_url)),
             total_completed: 0,
             quests: object_table::new(ctx),
             completed_users: table::new(ctx),
@@ -410,12 +437,13 @@ module holasui_quest::quest {
 
         let Journey {
             id,
-            reward_points: _,
+            reward_type:_,
+            reward_required_points: _,
+            reward_image_url: _,
             name: _,
             description: _,
             start_time: _,
             end_time: _,
-            reward_image_url: _,
             total_completed: _,
             quests,
             completed_users,
@@ -614,7 +642,7 @@ module holasui_quest::quest {
 
         assert!(!table::contains(&journey.completed_users, sender(ctx)), EJourneyAlreadyCompleted);
         let address_points = *table::borrow(&journey.users_points, sender(ctx));
-        assert!(address_points >= journey.reward_points, EJourneyNotCompleted);
+        assert!(address_points >= journey.reward_required_points, EJourneyNotCompleted);
 
         emit(JourneyCompleted {
             space_id: object::uid_to_inner(&space.id),
@@ -624,14 +652,30 @@ module holasui_quest::quest {
 
         journey.total_completed = journey.total_completed + 1;
         table::add(&mut journey.completed_users, sender(ctx), true);
-        transfer(Reward {
-            id: object::new(ctx),
-            name: journey.name,
-            description: journey.description,
-            image_url: journey.reward_image_url,
-            space_id: object::id(space),
-            journey_id
-        }, sender(ctx));
+
+
+        if(journey.reward_type == REWARD_TYPE_NFT) {
+            transfer(NftReward {
+                id: object::new(ctx),
+                name: journey.name,
+                description: journey.description,
+                image_url: journey.reward_image_url,
+                space_id: object::id(space),
+                journey_id,
+                claimer: sender(ctx),
+            }, sender(ctx));
+        }
+        else if(journey.reward_type == REWARD_TYPE_SOULBOUND){
+            transfer(SoulboundReward {
+                id: object::new(ctx),
+                name: journey.name,
+                description: journey.description,
+                image_url: journey.reward_image_url,
+                space_id: object::id(space),
+                journey_id,
+                claimer: sender(ctx),
+            }, sender(ctx));
+        }
     }
 
 
