@@ -437,7 +437,7 @@ module holasui_quest::quest {
 
         let Journey {
             id,
-            reward_type:_,
+            reward_type: _,
             reward_required_points: _,
             reward_image_url: _,
             name: _,
@@ -654,7 +654,7 @@ module holasui_quest::quest {
         table::add(&mut journey.completed_users, sender(ctx), true);
 
 
-        if(journey.reward_type == REWARD_TYPE_NFT) {
+        if (journey.reward_type == REWARD_TYPE_NFT) {
             transfer(NftReward {
                 id: object::new(ctx),
                 name: journey.name,
@@ -665,7 +665,7 @@ module holasui_quest::quest {
                 claimer: sender(ctx),
             }, sender(ctx));
         }
-        else if(journey.reward_type == REWARD_TYPE_SOULBOUND){
+        else if (journey.reward_type == REWARD_TYPE_SOULBOUND) {
             transfer(SoulboundReward {
                 id: object::new(ctx),
                 name: journey.name,
@@ -680,8 +680,11 @@ module holasui_quest::quest {
 
     // ======== View functions =========
 
-    public fun get_available_spaces(hub: &SpaceHub, user: address): u64 {
-        *table::borrow(&hub.space_creators_allowlist, user)
+    public fun available_spaces_to_create(hub: &SpaceHub, user: address): u64 {
+        if (table::contains(&hub.space_creators_allowlist, user)) {
+            return *table::borrow(&hub.space_creators_allowlist, user)
+        };
+        0
     }
 
     // ======== Utility functions =========
