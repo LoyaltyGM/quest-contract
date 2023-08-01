@@ -384,7 +384,7 @@ module holasui_quest::quest {
 
     // ======== Journey functions
 
-    public entry fun create_journey(
+    public fun create_journey(
         hub: &mut SpaceHub,
         coin: Coin<SUI>,
         admin_cap: &SpaceAdminCap,
@@ -397,7 +397,7 @@ module holasui_quest::quest {
         start_time: u64,
         end_time: u64,
         ctx: &mut TxContext
-    ) {
+    ): ID {
         check_space_version(space);
         check_space_admin(admin_cap, space);
 
@@ -426,7 +426,9 @@ module holasui_quest::quest {
             journey_id: object::uid_to_inner(&journey.id)
         });
 
-        object_table::add(&mut space.journeys, object::id(&journey), journey);
+        let id = object::id(&journey);
+        object_table::add(&mut space.journeys, id, journey);
+        id
     }
 
     entry fun remove_journey(admin_cap: &SpaceAdminCap, space: &mut Space, journey_id: ID) {

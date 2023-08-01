@@ -3,11 +3,13 @@ module holasui_quest::quest_test {
     use std::string::utf8;
 
     use sui::coin;
+    use sui::object::ID;
     use sui::object_table;
     use sui::sui::SUI;
     use sui::test_scenario as ts;
+    use sui::test_scenario::Scenario;
 
-    use holasui_quest::quest::{Self, Space, SpaceAdminCap};
+    use holasui_quest::quest::{Self, Space, SpaceAdminCap, SpaceHub};
 
     const ADMIN: address = @0xA11CE;
     const CREATOR: address = @0x923E;
@@ -35,7 +37,7 @@ module holasui_quest::quest_test {
     }
 
     #[test]
-    fun create_space() {
+    fun create_space_by_creator() {
         let spaces_amount = 10;
 
         let test = ts::begin(ADMIN);
@@ -50,16 +52,7 @@ module holasui_quest::quest_test {
 
         assert!(quest::available_spaces_to_create(&hub, CREATOR) == spaces_amount, 0);
 
-        ts::next_tx(&mut test, CREATOR);
-
-        quest::create_space(&mut hub,
-            utf8(b"Space"),
-            utf8(b"Space description"),
-            utf8(b"ipfs://space"),
-            utf8(b"https://space.com"),
-            utf8(b"https://x.com/space"),
-            ts::ctx(&mut test),
-        );
+        create_space(&mut test, &mut hub);
 
         assert!(quest::available_spaces_to_create(&hub, CREATOR) == spaces_amount - 1, 0);
 
@@ -70,7 +63,7 @@ module holasui_quest::quest_test {
 
     #[test]
     #[expected_failure(abort_code = quest::ENotSpaceCreator)]
-    fun create_space_not_creator() {
+    fun create_space_by_not_creator() {
         let test = ts::begin(ADMIN);
 
         quest::test_new_space_hub(ts::ctx(&mut test));
@@ -80,23 +73,14 @@ module holasui_quest::quest_test {
 
         assert!(quest::available_spaces_to_create(&hub, CREATOR) == 0, 0);
 
-        ts::next_tx(&mut test, CREATOR);
-
-        quest::create_space(&mut hub,
-            utf8(b"Space"),
-            utf8(b"Space description"),
-            utf8(b"ipfs://space"),
-            utf8(b"https://space.com"),
-            utf8(b"https://x.com/space"),
-            ts::ctx(&mut test),
-        );
+        create_space(&mut test, &mut hub);
 
         ts::return_shared(hub);
         ts::end(test);
     }
 
     #[test]
-    fun create_journey() {
+    fun create_journey_by_creator() {
         let test = ts::begin(ADMIN);
 
         quest::test_new_space_hub(ts::ctx(&mut test));
@@ -107,41 +91,19 @@ module holasui_quest::quest_test {
 
         quest::add_space_creator(&admin_cap, &mut hub, CREATOR, 1);
 
-        ts::next_tx(&mut test, CREATOR);
-
-        quest::create_space(&mut hub,
-            utf8(b"Space"),
-            utf8(b"Space description"),
-            utf8(b"ipfs://space"),
-            utf8(b"https://space.com"),
-            utf8(b"https://x.com/space"),
-            ts::ctx(&mut test),
-        );
+        create_space(&mut test, &mut hub);
 
         ts::next_tx(&mut test, CREATOR);
 
         let space = ts::take_shared<Space>(&test);
         let space_admin_cap = ts::take_from_sender<SpaceAdminCap>(&test);
 
-        let coin_to_pay = coin::mint_for_testing<SUI>(
+        let coin = coin::mint_for_testing<SUI>(
             quest::fee_for_creating_journey(&hub),
             ts::ctx(&mut test)
         );
 
-        quest::create_journey(
-            &mut hub,
-            coin_to_pay,
-            &space_admin_cap,
-            &mut space,
-            1,
-            utf8(b"ipfs://reward"),
-            100,
-            utf8(b"Journey"),
-            utf8(b"Journey description"),
-            100,
-            200,
-            ts::ctx(&mut test),
-        );
+        create_journey(&mut test, &mut hub, &mut space, &mut space_admin_cap, coin);
 
         assert!(object_table::length(quest::space_journeys(&space)) == 1, 0);
 
@@ -150,5 +112,45 @@ module holasui_quest::quest_test {
         ts::return_shared(space);
         ts::return_to_sender(&test, space_admin_cap);
         ts::end(test);
+    }
+
+    // ====== Utility functions ======
+
+    fun create_space(scenario: &mut Scenario, hub: &mut SpaceHub) {
+        ts::next_tx(scenario, CREATOR);
+
+        quest::create_space(hub,
+            utf8(b"Space"),
+            utf8(b"Space description"),
+            utf8(b"ipfs://space"),
+            utf8(b"https://space.com"),
+            utf8(b"https://x.com/space"),
+            ts::ctx(scenario),
+        );
+    }
+
+    fun create_journey(
+        scenario: &mut Scenario,
+        hub: &mut SpaceHub,
+        space: &mut Space,
+        space_admin_cap: &mut SpaceAdminCap,
+        coin: coin::Coin<SUI>
+    ): ID {
+        ts::next_tx(scenario, CREATOR);
+
+        quest::create_journey(
+            hub,
+            coin,
+            space_admin_cap,
+            space,
+            1,
+            utf8(b"ipfs://reward"),
+            100,
+            utf8(b"Journey"),
+            utf8(b"Journey description"),
+            100,
+            200,
+            ts::ctx(scenario),
+        )
     }
 }
