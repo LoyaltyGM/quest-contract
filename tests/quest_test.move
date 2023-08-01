@@ -98,12 +98,7 @@ module holasui_quest::quest_test {
         let space = ts::take_shared<Space>(&test);
         let space_admin_cap = ts::take_from_sender<SpaceAdminCap>(&test);
 
-        let coin = coin::mint_for_testing<SUI>(
-            quest::fee_for_creating_journey(&hub),
-            ts::ctx(&mut test)
-        );
-
-        create_journey(&mut test, &mut hub, &mut space, &mut space_admin_cap, coin);
+        create_journey(&mut test, &mut hub, &mut space, &mut space_admin_cap);
 
         assert!(object_table::length(quest::space_journeys(&space)) == 1, 0);
 
@@ -134,9 +129,13 @@ module holasui_quest::quest_test {
         hub: &mut SpaceHub,
         space: &mut Space,
         space_admin_cap: &mut SpaceAdminCap,
-        coin: coin::Coin<SUI>
     ): ID {
         ts::next_tx(scenario, CREATOR);
+
+        let coin = coin::mint_for_testing<SUI>(
+            quest::fee_for_creating_journey(hub),
+            ts::ctx(scenario)
+        );
 
         quest::create_journey(
             hub,
