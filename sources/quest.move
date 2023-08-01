@@ -303,7 +303,7 @@ module holasui_quest::quest {
 
     // ======== Space functions
 
-    entry fun create_space(
+    public entry fun create_space(
         hub: &mut SpaceHub,
         name: String,
         description: String,
