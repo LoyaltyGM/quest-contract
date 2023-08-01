@@ -386,7 +386,7 @@ module holasui_quest::quest {
 
     // ======== Journey functions
 
-    entry fun create_journey(
+    public entry fun create_journey(
         hub: &mut SpaceHub,
         coin: Coin<SUI>,
         admin_cap: &SpaceAdminCap,
@@ -685,6 +685,10 @@ module holasui_quest::quest {
             return *table::borrow(&hub.space_creators_allowlist, user)
         };
         0
+    }
+
+    public fun fee_for_creating_journey(hub: &SpaceHub): u64 {
+        hub.fee_for_creating_journey
     }
 
     // ======== Utility functions =========
