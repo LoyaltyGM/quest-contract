@@ -3,6 +3,7 @@ module holasui_quest::quest_test {
     use std::string::utf8;
 
     use sui::coin;
+    use sui::object_table;
     use sui::sui::SUI;
     use sui::test_scenario as ts;
 
@@ -141,6 +142,8 @@ module holasui_quest::quest_test {
             200,
             ts::ctx(&mut test),
         );
+
+        assert!(object_table::length(quest::space_journeys(&space)) == 1, 0);
 
         quest::test_destroy_admin_cap(admin_cap);
         ts::return_shared(hub);

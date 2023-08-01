@@ -689,6 +689,10 @@ module holasui_quest::quest {
         hub.fee_for_creating_journey
     }
 
+    public fun space_journeys(space: &Space): &ObjectTable<ID, Journey> {
+        &space.journeys
+    }
+
     // ======== Utility functions =========
 
     fun update_address_to_u64_table(table: &mut Table<address, u64>, address: address, amount: u64) {
