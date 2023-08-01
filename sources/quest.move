@@ -108,8 +108,6 @@ module holasui_quest::quest {
         /// The time when the journey ends
         end_time: u64,
 
-        //todo: add reward type
-        // reward_type: u64,
         /// The amount of users that have completed the journey
         total_completed: u64,
         /// Quests that are part of the journey
