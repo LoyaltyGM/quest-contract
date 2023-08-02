@@ -633,7 +633,7 @@ module holasui_quest::quest {
 
     // ======== User functions =========
 
-    entry fun complete_journey(
+    public fun complete_journey(
         space: &mut Space,
         journey_id: ID,
         ctx: &mut TxContext
@@ -706,6 +706,11 @@ module holasui_quest::quest {
         let journey = object_table::borrow(&space.journeys, journey_id);
         let quest = object_table::borrow(&journey.quests, quest_id);
         &quest.completed_users
+    }
+
+    public fun journey_completed_users(space: &Space, journey_id: ID): &Table<address, bool> {
+        let journey = object_table::borrow(&space.journeys, journey_id);
+        &journey.completed_users
     }
 
     // ======== Utility functions =========
