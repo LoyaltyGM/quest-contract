@@ -169,7 +169,7 @@ module holasui_quest::quest_test {
 
         create_quest(&mut test, &mut space, &mut space_admin_cap, journey_id);
 
-        assert!(object_table::length(quest::space_journey_quests(&space, journey_id)) == 1, 0);
+        assert!(object_table::length(quest::journey_quests(&space, journey_id)) == 1, 0);
 
         quest::test_destroy_admin_cap(admin_cap);
         ts::return_shared(hub);
@@ -201,11 +201,11 @@ module holasui_quest::quest_test {
 
         let quest_id = create_quest(&mut test, &mut space, &mut space_admin_cap, journey_id);
 
-        assert!(object_table::length(quest::space_journey_quests(&space, journey_id)) == 1, 0);
+        assert!(object_table::length(quest::journey_quests(&space, journey_id)) == 1, 0);
 
         quest::remove_quest(&space_admin_cap, &mut space, journey_id, quest_id);
 
-        assert!(object_table::length(quest::space_journey_quests(&space, journey_id)) == 0, 0);
+        assert!(object_table::length(quest::journey_quests(&space, journey_id)) == 0, 0);
 
         quest::test_destroy_admin_cap(admin_cap);
         ts::return_shared(hub);

@@ -697,7 +697,7 @@ module holasui_quest::quest {
         &space.journeys
     }
 
-    public fun space_journey_quests(space: &Space, journey_id: ID): &ObjectTable<ID, Quest> {
+    public fun journey_quests(space: &Space, journey_id: ID): &ObjectTable<ID, Quest> {
         let journey = object_table::borrow(&space.journeys, journey_id);
         &journey.quests
     }
