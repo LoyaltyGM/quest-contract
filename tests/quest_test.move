@@ -109,6 +109,40 @@ module holasui_quest::quest_test {
         ts::end(test);
     }
 
+    #[test]
+    fun remove_journey_by_creator() {
+        let test = ts::begin(ADMIN);
+
+        quest::test_new_space_hub(ts::ctx(&mut test));
+        ts::next_tx(&mut test, ADMIN);
+
+        let admin_cap = quest::test_new_admin_cap(ts::ctx(&mut test));
+        let hub = ts::take_shared<quest::SpaceHub>(&test);
+
+        quest::add_space_creator(&admin_cap, &mut hub, CREATOR, 1);
+
+        create_space(&mut test, &mut hub);
+
+        ts::next_tx(&mut test, CREATOR);
+
+        let space = ts::take_shared<Space>(&test);
+        let space_admin_cap = ts::take_from_sender<SpaceAdminCap>(&test);
+
+        let journey_id = create_journey(&mut test, &mut hub, &mut space, &mut space_admin_cap);
+
+        assert!(object_table::length(quest::space_journeys(&space)) == 1, 0);
+
+        quest::remove_journey(&space_admin_cap, &mut space, journey_id);
+
+        assert!(object_table::length(quest::space_journeys(&space)) == 1, 0);
+
+        quest::test_destroy_admin_cap(admin_cap);
+        ts::return_shared(hub);
+        ts::return_shared(space);
+        ts::return_to_sender(&test, space_admin_cap);
+        ts::end(test);
+    }
+
     // ====== Utility functions ======
 
     fun create_space(scenario: &mut Scenario, hub: &mut SpaceHub) {
