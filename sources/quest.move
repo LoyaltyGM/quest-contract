@@ -569,7 +569,7 @@ module holasui_quest::quest {
         id
     }
 
-    entry fun remove_quest(admin_cap: &SpaceAdminCap, space: &mut Space, journey_id: ID, quest_id: ID) {
+    public fun remove_quest(admin_cap: &SpaceAdminCap, space: &mut Space, journey_id: ID, quest_id: ID) {
         check_space_version(space);
         check_space_admin(admin_cap, space);
 
