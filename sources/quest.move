@@ -47,7 +47,7 @@ module holasui_quest::quest {
         id: UID,
     }
 
-    struct Verifier has key, store {
+    struct VerifierCap has key, store {
         id: UID,
     }
 
@@ -242,7 +242,7 @@ module holasui_quest::quest {
         public_transfer(AdminCap {
             id: object::new(ctx),
         }, sender(ctx));
-        public_transfer(Verifier {
+        public_transfer(VerifierCap {
             id: object::new(ctx),
         }, sender(ctx));
         share_object(SpaceHub {
@@ -600,8 +600,8 @@ module holasui_quest::quest {
 
     // ======== Verifier functions =========
 
-    entry fun complete_quest(
-        _: &Verifier,
+    public fun complete_quest(
+        _: &VerifierCap,
         space: &mut Space,
         journey_id: ID,
         quest_id: ID,
@@ -702,6 +702,12 @@ module holasui_quest::quest {
         &journey.quests
     }
 
+    public fun quest_completed_users(space: &Space, journey_id: ID, quest_id: ID): &Table<address, bool> {
+        let journey = object_table::borrow(&space.journeys, journey_id);
+        let quest = object_table::borrow(&journey.quests, quest_id);
+        &quest.completed_users
+    }
+
     // ======== Utility functions =========
 
     fun update_address_to_u64_table(table: &mut Table<address, u64>, address: address, amount: u64) {
@@ -746,6 +752,17 @@ module holasui_quest::quest {
     #[test_only]
     public fun test_destroy_admin_cap(cap: AdminCap) {
         let AdminCap { id } = cap;
+        object::delete(id)
+    }
+
+    #[test_only]
+    public fun test_new_verifier_cap(ctx: &mut TxContext): VerifierCap {
+        VerifierCap { id: object::new(ctx) }
+    }
+
+    #[test_only]
+    public fun test_destroy_verifier_cap(cap: VerifierCap) {
+        let VerifierCap { id } = cap;
         object::delete(id)
     }
 }
