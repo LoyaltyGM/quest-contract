@@ -525,7 +525,7 @@ module holasui_quest::quest {
         journey.end_time = end_time;
     }
 
-    entry fun create_quest(
+    public fun create_quest(
         admin_cap: &SpaceAdminCap,
         space: &mut Space,
         journey_id: ID,
@@ -538,7 +538,7 @@ module holasui_quest::quest {
         function_name: String,
         arguments: vector<String>,
         ctx: &mut TxContext
-    ) {
+    ): ID {
         check_space_version(space);
         check_space_admin(admin_cap, space);
 
@@ -564,7 +564,9 @@ module holasui_quest::quest {
             quest_id: object::uid_to_inner(&quest.id)
         });
 
-        object_table::add(&mut journey.quests, object::id(&quest), quest);
+        let id = object::id(&quest);
+        object_table::add(&mut journey.quests, id, quest);
+        id
     }
 
     entry fun remove_quest(admin_cap: &SpaceAdminCap, space: &mut Space, journey_id: ID, quest_id: ID) {
@@ -693,6 +695,11 @@ module holasui_quest::quest {
 
     public fun space_journeys(space: &Space): &ObjectTable<ID, Journey> {
         &space.journeys
+    }
+
+    public fun space_journey_quests(space: &Space, journey_id: ID): &ObjectTable<ID, Quest> {
+        let journey = object_table::borrow(&space.journeys, journey_id);
+        &journey.quests
     }
 
     // ======== Utility functions =========

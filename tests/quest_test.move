@@ -134,7 +134,39 @@ module holasui_quest::quest_test {
 
         quest::remove_journey(&space_admin_cap, &mut space, journey_id);
 
-        assert!(object_table::length(quest::space_journeys(&space)) == 1, 0);
+        assert!(object_table::length(quest::space_journeys(&space)) == 0, 0);
+
+        quest::test_destroy_admin_cap(admin_cap);
+        ts::return_shared(hub);
+        ts::return_shared(space);
+        ts::return_to_sender(&test, space_admin_cap);
+        ts::end(test);
+    }
+
+    #[test]
+    fun create_quest_by_creator() {
+        let test = ts::begin(ADMIN);
+
+        quest::test_new_space_hub(ts::ctx(&mut test));
+        ts::next_tx(&mut test, ADMIN);
+
+        let admin_cap = quest::test_new_admin_cap(ts::ctx(&mut test));
+        let hub = ts::take_shared<quest::SpaceHub>(&test);
+
+        quest::add_space_creator(&admin_cap, &mut hub, CREATOR, 1);
+
+        create_space(&mut test, &mut hub);
+
+        ts::next_tx(&mut test, CREATOR);
+
+        let space = ts::take_shared<Space>(&test);
+        let space_admin_cap = ts::take_from_sender<SpaceAdminCap>(&test);
+
+        let journey_id = create_journey(&mut test, &mut hub, &mut space, &mut space_admin_cap);
+
+        create_quest(&mut test, &mut space, &mut space_admin_cap, journey_id);
+
+        assert!(object_table::length(quest::space_journey_quests(&space, journey_id)) == 1, 0);
 
         quest::test_destroy_admin_cap(admin_cap);
         ts::return_shared(hub);
@@ -162,7 +194,7 @@ module holasui_quest::quest_test {
         scenario: &mut Scenario,
         hub: &mut SpaceHub,
         space: &mut Space,
-        space_admin_cap: &mut SpaceAdminCap,
+        space_admin_cap: &SpaceAdminCap,
     ): ID {
         ts::next_tx(scenario, CREATOR);
 
@@ -183,6 +215,31 @@ module holasui_quest::quest_test {
             utf8(b"Journey description"),
             100,
             200,
+            ts::ctx(scenario),
+        )
+    }
+
+    fun create_quest(
+        scenario: &mut Scenario,
+        space: &mut Space,
+        space_admin_cap: &SpaceAdminCap,
+        journey_id: ID,
+    ): ID {
+        ts::next_tx(scenario, CREATOR);
+
+        let args = vector[utf8(b"arg1"), utf8(b"arg2")];
+        quest::create_quest(
+            space_admin_cap,
+            space,
+            journey_id,
+            100,
+            utf8(b"Quest"),
+            utf8(b"Quest description"),
+            utf8(b"https://call_to_action.com"),
+            journey_id,
+            utf8(b"module_name"),
+            utf8(b"function_name"),
+            args,
             ts::ctx(scenario),
         )
     }
