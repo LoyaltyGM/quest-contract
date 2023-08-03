@@ -611,8 +611,10 @@ module holasui_quest::quest {
         check_space_version(space);
 
         let journey = object_table::borrow_mut(&mut space.journeys, journey_id);
-        assert!(clock::timestamp_ms(clock) >= journey.start_time, EInvalidTime);
-        assert!(clock::timestamp_ms(clock) <= journey.end_time, EInvalidTime);
+        assert!(
+            clock::timestamp_ms(clock) >= journey.start_time && clock::timestamp_ms(clock) <= journey.end_time,
+            EInvalidTime
+        );
 
         let quest = object_table::borrow_mut(&mut journey.quests, quest_id);
         assert!(!table::contains(&quest.completed_users, user), EQuestAlreadyCompleted);
