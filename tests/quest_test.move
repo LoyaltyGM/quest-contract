@@ -42,6 +42,30 @@ module holasui_quest::quest_test {
     }
 
     #[test]
+    fun add_space_creator_twice() {
+        let spaces_amount = 10;
+        let test = ts::begin(ADMIN);
+
+        quest::test_new_space_hub(ts::ctx(&mut test));
+
+
+        ts::next_tx(&mut test, ADMIN);
+
+
+        let admin_cap = quest::test_new_admin_cap(ts::ctx(&mut test));
+        let hub = ts::take_shared<quest::SpaceHub>(&test);
+
+        quest::add_space_creator(&admin_cap, &mut hub, CREATOR, spaces_amount);
+        quest::add_space_creator(&admin_cap, &mut hub, CREATOR, spaces_amount);
+
+        assert!(quest::available_spaces_to_create(&hub, CREATOR) == 2 * spaces_amount, 0);
+
+        quest::test_destroy_admin_cap(admin_cap);
+        ts::return_shared(hub);
+        ts::end(test);
+    }
+
+    #[test]
     fun create_space_by_creator() {
         let spaces_amount = 10;
         let test = ts::begin(ADMIN);

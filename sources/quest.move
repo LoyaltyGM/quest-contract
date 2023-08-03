@@ -269,7 +269,7 @@ module holasui_quest::quest {
             table::add(&mut hub.space_creators_allowlist, creator, allowed_spaces_amount);
         } else {
             let current_allowed_spaces_amount = table::borrow_mut(&mut hub.space_creators_allowlist, creator);
-            *current_allowed_spaces_amount = allowed_spaces_amount;
+            *current_allowed_spaces_amount = *current_allowed_spaces_amount + allowed_spaces_amount;
         }
     }
 
