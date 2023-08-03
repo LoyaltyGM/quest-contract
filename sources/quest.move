@@ -645,6 +645,7 @@ module holasui_quest::quest {
         let journey = object_table::borrow_mut(&mut space.journeys, journey_id);
 
         assert!(!table::contains(&journey.completed_users, sender(ctx)), EJourneyAlreadyCompleted);
+        assert!(table::contains(&journey.users_points, sender(ctx)), EJourneyNotCompleted);
         let address_points = *table::borrow(&journey.users_points, sender(ctx));
         assert!(address_points >= journey.reward_required_points, EJourneyNotCompleted);
 
