@@ -21,8 +21,10 @@ module holasui_quest::quest {
     // ======== Constants =========
 
     const VERSION: u64 = 0;
+
     const REWARD_TYPE_NFT: u64 = 0;
     const REWARD_TYPE_SOULBOUND: u64 = 1;
+
     const FEE_FOR_CREATING_CAMPAIGN: u64 = 1000000000;
 
     // ======== Errors =========
@@ -37,7 +39,6 @@ module holasui_quest::quest {
     const EJourneyAlreadyCompleted: u64 = 7;
     const EJourneyNotCompleted: u64 = 8;
     const EInvalidRewardType: u64 = 9;
-
 
     // ======== Types =========
 
