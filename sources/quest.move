@@ -9,6 +9,7 @@ module holasui_quest::quest {
     use sui::object::{Self, ID, UID};
     use sui::object_table::{Self, ObjectTable};
     use sui::package;
+    use sui::pay;
     use sui::sui::SUI;
     use sui::table::{Self, Table};
     use sui::table_vec::{Self, TableVec};
@@ -38,10 +39,11 @@ module holasui_quest::quest {
     const ENotSpaceAdmin: u64 = 3;
     const EInvalidTime: u64 = 4;
     const EQuestAlreadyCompleted: u64 = 5;
-    const EQuestNotCompleted: u64 = 6;
-    const EJourneyAlreadyCompleted: u64 = 7;
-    const EJourneyNotCompleted: u64 = 8;
-    const EInvalidRewardType: u64 = 9;
+    const EQuestNotStarted: u64 = 6;
+    const EQuestAlreadyStarted: u64 = 7;
+    const EJourneyAlreadyCompleted: u64 = 8;
+    const EJourneyNotCompleted: u64 = 9;
+    const EInvalidRewardType: u64 = 10;
 
     // ======== Types =========
 
@@ -639,7 +641,8 @@ module holasui_quest::quest {
         );
 
         let quest = object_table::borrow_mut(&mut journey.quests, quest_id);
-        assert!(!table::contains(&quest.completed_users, user), EQuestAlreadyCompleted);
+        assert!(table::contains(&quest.completed_users, user), EQuestNotStarted);
+        assert!(*table::borrow(&quest.completed_users, user) == false, EQuestAlreadyCompleted);
 
         emit(QuestCompleted {
             space_id: object::uid_to_inner(&space.id),
@@ -649,13 +652,40 @@ module holasui_quest::quest {
         });
 
         quest.total_completed = quest.total_completed + 1;
-        table::add(&mut quest.completed_users, user, true);
+
+        let completed = table::borrow_mut(&mut quest.completed_users, user);
+        *completed = true;
+
         update_address_to_u64_table(&mut journey.users_points, user, quest.points_amount);
         update_address_to_u64_table(&mut journey.users_completed_quests, user, 1);
         update_address_to_u64_table(&mut space.points, user, quest.points_amount);
     }
 
     // ======== User functions =========
+
+    public fun start_quest(
+        coin: &mut Coin<SUI>,
+        space: &mut Space,
+        journey_id: ID,
+        quest_id: ID,
+        clock: &Clock,
+        ctx: &mut TxContext
+    ) {
+        check_space_version(space);
+
+        pay::split_and_transfer(coin, FEE_FOR_START_QUEST, VERIFIER, ctx);
+
+        let journey = object_table::borrow_mut(&mut space.journeys, journey_id);
+        assert!(
+            clock::timestamp_ms(clock) >= journey.start_time && clock::timestamp_ms(clock) <= journey.end_time,
+            EInvalidTime
+        );
+
+        let quest = object_table::borrow_mut(&mut journey.quests, quest_id);
+        assert!(!table::contains(&quest.completed_users, sender(ctx)), EQuestAlreadyStarted);
+
+        table::add(&mut quest.completed_users, sender(ctx), false);
+    }
 
     public fun complete_journey(
         space: &mut Space,
