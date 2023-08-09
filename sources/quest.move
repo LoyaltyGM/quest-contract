@@ -737,6 +737,8 @@ module holasui_quest::quest {
 
     // ======== View functions =========
 
+    // ======== View functions: SpaceHub
+
     public fun available_spaces_to_create(hub: &SpaceHub, user: address): u64 {
         if (table::contains(&hub.space_creators_allowlist, user)) {
             return *table::borrow(&hub.space_creators_allowlist, user)
@@ -756,24 +758,145 @@ module holasui_quest::quest {
         hub.verifier_address
     }
 
+    public fun spaces(hub: &SpaceHub): &TableVec<ID> {
+        &hub.spaces
+    }
+
+    // ======== View functions: Space
+
+    public fun space(space: &Space): &Space {
+        space
+    }
+
+    public fun space_name(space: &Space): String {
+        space.name
+    }
+
+    public fun space_description(space: &Space): String {
+        space.description
+    }
+
+    public fun space_image_url(space: &Space): Url {
+        space.image_url
+    }
+
+    public fun space_website_url(space: &Space): Url {
+        space.website_url
+    }
+
+    public fun space_twitter_url(space: &Space): Url {
+        space.twitter_url
+    }
+
     public fun space_journeys(space: &Space): &ObjectTable<ID, Journey> {
         &space.journeys
     }
 
+    public fun space_points(space: &Space): &Table<address, u64> {
+        &space.points
+    }
+
+    // ======== View functions: Journey
+
+    public fun journey(space: &Space, journey_id: ID): &Journey {
+        object_table::borrow(&space.journeys, journey_id)
+    }
+
+    public fun journey_reward_type(space: &Space, journey_id: ID): u64 {
+        journey(space, journey_id).reward_type
+    }
+
+    public fun journey_reward_required_points(space: &Space, journey_id: ID): u64 {
+        journey(space, journey_id).reward_required_points
+    }
+
+    public fun journey_reward_image_url(space: &Space, journey_id: ID): Url {
+        journey(space, journey_id).reward_image_url
+    }
+
+    public fun journey_name(space: &Space, journey_id: ID): String {
+        journey(space, journey_id).name
+    }
+
+    public fun journey_description(space: &Space, journey_id: ID): String {
+        journey(space, journey_id).description
+    }
+
+    public fun journey_start_time(space: &Space, journey_id: ID): u64 {
+        journey(space, journey_id).start_time
+    }
+
+    public fun journey_end_time(space: &Space, journey_id: ID): u64 {
+        journey(space, journey_id).end_time
+    }
+
+    public fun journey_total_completed(space: &Space, journey_id: ID): u64 {
+        journey(space, journey_id).total_completed
+    }
+
     public fun journey_quests(space: &Space, journey_id: ID): &ObjectTable<ID, Quest> {
+        &journey(space, journey_id).quests
+    }
+
+    public fun journey_completed_users(space: &Space, journey_id: ID): &Table<address, bool> {
+        &journey(space, journey_id).completed_users
+    }
+
+    public fun journey_users_points(space: &Space, journey_id: ID): &Table<address, u64> {
+        &journey(space, journey_id).users_points
+    }
+
+    public fun journey_users_completed_quests(space: &Space, journey_id: ID): &Table<address, u64> {
+        &journey(space, journey_id).users_completed_quests
+    }
+
+    // ======== View functions: Quest
+
+    public fun quest(space: &Space, journey_id: ID, quest_id: ID): &Quest {
         let journey = object_table::borrow(&space.journeys, journey_id);
-        &journey.quests
+        object_table::borrow(&journey.quests, quest_id)
+    }
+
+    public fun quest_points_amount(space: &Space, journey_id: ID, quest_id: ID): u64 {
+        quest(space, journey_id, quest_id).points_amount
+    }
+
+    public fun quest_name(space: &Space, journey_id: ID, quest_id: ID): String {
+        quest(space, journey_id, quest_id).name
+    }
+
+    public fun quest_description(space: &Space, journey_id: ID, quest_id: ID): String {
+        quest(space, journey_id, quest_id).description
+    }
+
+    public fun quest_call_to_action_url(space: &Space, journey_id: ID, quest_id: ID): Url {
+        quest(space, journey_id, quest_id).call_to_action_url
+    }
+
+    public fun quest_package_id(space: &Space, journey_id: ID, quest_id: ID): ID {
+        quest(space, journey_id, quest_id).package_id
+    }
+
+    public fun quest_module_name(space: &Space, journey_id: ID, quest_id: ID): String {
+        quest(space, journey_id, quest_id).module_name
+    }
+
+    public fun quest_function_name(space: &Space, journey_id: ID, quest_id: ID): String {
+        quest(space, journey_id, quest_id).function_name
+    }
+
+    public fun quest_arguments(space: &Space, journey_id: ID, quest_id: ID): &vector<String> {
+        &quest(space, journey_id, quest_id).arguments
+    }
+
+    public fun quest_total_completed(space: &Space, journey_id: ID, quest_id: ID): u64 {
+        quest(space, journey_id, quest_id).total_completed
     }
 
     public fun quest_completed_users(space: &Space, journey_id: ID, quest_id: ID): &Table<address, bool> {
         let journey = object_table::borrow(&space.journeys, journey_id);
         let quest = object_table::borrow(&journey.quests, quest_id);
         &quest.completed_users
-    }
-
-    public fun journey_completed_users(space: &Space, journey_id: ID): &Table<address, bool> {
-        let journey = object_table::borrow(&space.journeys, journey_id);
-        &journey.completed_users
     }
 
     // ======== Utility functions =========
