@@ -259,6 +259,102 @@ module holasui_quest::quest_test {
     }
 
     #[test]
+    #[expected_failure(abort_code = quest::EQuestNotStarted)]
+    fun not_start_quest() {
+        let test = ts::begin(ADMIN);
+
+        quest::test_new_space_hub(ts::ctx(&mut test));
+
+
+        ts::next_tx(&mut test, ADMIN);
+
+
+        let admin_cap = quest::test_new_admin_cap(ts::ctx(&mut test));
+        let hub = ts::take_shared<quest::SpaceHub>(&test);
+
+        quest::add_space_creator(&admin_cap, &mut hub, CREATOR, 1);
+        create_space(&mut test, &mut hub);
+
+
+        ts::next_tx(&mut test, CREATOR);
+
+
+        let space = ts::take_shared<Space>(&test);
+        let space_admin_cap = ts::take_from_sender<SpaceAdminCap>(&test);
+        let journey_id = create_journey(&mut test, &mut hub, &mut space, &mut space_admin_cap);
+        let quest_id = create_quest(&mut test, &mut space, &mut space_admin_cap, journey_id);
+        let clock = clock::create_for_testing(ts::ctx(&mut test));
+        let verifier_cap = quest::test_new_verifier_cap(ts::ctx(&mut test));
+
+        clock::increment_for_testing(&mut clock, 100);
+
+        assert!(!table::contains(quest::quest_completed_users(&space, journey_id, quest_id), USER), 0);
+
+        quest::complete_quest(&verifier_cap, &mut space, journey_id, quest_id, USER, &clock);
+
+        quest::test_destroy_admin_cap(admin_cap);
+        quest::test_destroy_verifier_cap(verifier_cap);
+        clock::destroy_for_testing(clock);
+        ts::return_shared(hub);
+        ts::return_shared(space);
+        ts::return_to_sender(&test, space_admin_cap);
+        ts::end(test);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = quest::EQuestAlreadyStarted)]
+    fun start_quest_twice() {
+        let test = ts::begin(ADMIN);
+
+        quest::test_new_space_hub(ts::ctx(&mut test));
+
+
+        ts::next_tx(&mut test, ADMIN);
+
+
+        let admin_cap = quest::test_new_admin_cap(ts::ctx(&mut test));
+        let hub = ts::take_shared<quest::SpaceHub>(&test);
+
+        quest::add_space_creator(&admin_cap, &mut hub, CREATOR, 1);
+        create_space(&mut test, &mut hub);
+
+
+        ts::next_tx(&mut test, CREATOR);
+
+
+        let space = ts::take_shared<Space>(&test);
+        let space_admin_cap = ts::take_from_sender<SpaceAdminCap>(&test);
+        let journey_id = create_journey(&mut test, &mut hub, &mut space, &mut space_admin_cap);
+        let quest_id = create_quest(&mut test, &mut space, &mut space_admin_cap, journey_id);
+        let clock = clock::create_for_testing(ts::ctx(&mut test));
+        let verifier_cap = quest::test_new_verifier_cap(ts::ctx(&mut test));
+        let coin = coin::mint_for_testing<SUI>(
+            quest::fee_for_starting_quest(&mut hub) * 2,
+            ts::ctx(&mut test)
+        );
+
+        clock::increment_for_testing(&mut clock, 100);
+
+        assert!(!table::contains(quest::quest_completed_users(&space, journey_id, quest_id), USER), 0);
+
+
+        ts::next_tx(&mut test, USER);
+
+
+        quest::start_quest(&mut coin, &mut space, journey_id, quest_id, &clock, ts::ctx(&mut test));
+        quest::start_quest(&mut coin, &mut space, journey_id, quest_id, &clock, ts::ctx(&mut test));
+
+        quest::test_destroy_admin_cap(admin_cap);
+        quest::test_destroy_verifier_cap(verifier_cap);
+        clock::destroy_for_testing(clock);
+        coin::burn_for_testing(coin);
+        ts::return_shared(hub);
+        ts::return_shared(space);
+        ts::return_to_sender(&test, space_admin_cap);
+        ts::end(test);
+    }
+
+    #[test]
     fun complete_quest_by_verifier() {
         let test = ts::begin(ADMIN);
 
