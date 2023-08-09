@@ -748,6 +748,14 @@ module holasui_quest::quest {
         hub.fee_for_creating_journey
     }
 
+    public fun fee_for_starting_quest(hub: &SpaceHub): u64 {
+        hub.fee_for_start_quest
+    }
+
+    public fun verifier_address(hub: &SpaceHub): address {
+        hub.verifier_address
+    }
+
     public fun space_journeys(space: &Space): &ObjectTable<ID, Journey> {
         &space.journeys
     }
