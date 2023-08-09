@@ -22,10 +22,13 @@ module holasui_quest::quest {
 
     const VERSION: u64 = 0;
 
+    const VERIFIER: address = @0xfa40dda8beaf0bee40130a32df04bc74bb8a4bc85b2d27c54289fe8676d5f977;
+
     const REWARD_TYPE_NFT: u64 = 0;
     const REWARD_TYPE_SOULBOUND: u64 = 1;
 
     const FEE_FOR_CREATING_CAMPAIGN: u64 = 1000000000;
+    const FEE_FOR_START_QUEST: u64 = 10000000;
 
     // ======== Errors =========
 
@@ -56,10 +59,14 @@ module holasui_quest::quest {
         id: UID,
         /// The version of the hub
         version: u64,
-        /// The balance of the hub
-        balance: Balance<SUI>,
         /// The amount of SUI that needs to be paid to create a journey
         fee_for_creating_journey: u64,
+        /// The amount of SUI that needs to be paid to start a quest
+        fee_for_start_quest: u64,
+        /// The address of the verifier that receives the fee for starting a quest
+        verifier_address: address,
+        /// The balance of the hub
+        balance: Balance<SUI>,
         /// The amount of spaces that can be created by a single address
         space_creators_allowlist: Table<address, u64>,
         /// The spaces that have been created
@@ -249,8 +256,10 @@ module holasui_quest::quest {
         share_object(SpaceHub {
             id: object::new(ctx),
             version: VERSION,
-            balance: balance::zero(),
             fee_for_creating_journey: FEE_FOR_CREATING_CAMPAIGN,
+            fee_for_start_quest: FEE_FOR_START_QUEST,
+            verifier_address: VERIFIER,
+            balance: balance::zero(),
             space_creators_allowlist: table::new(ctx),
             spaces: table_vec::empty<ID>(ctx),
         })
@@ -278,6 +287,18 @@ module holasui_quest::quest {
         check_hub_version(hub);
 
         hub.fee_for_creating_journey = fee;
+    }
+
+    entry fun update_fee_for_start_quest(_: &AdminCap, hub: &mut SpaceHub, fee: u64) {
+        check_hub_version(hub);
+
+        hub.fee_for_start_quest = fee;
+    }
+
+    entry fun update_verifier_address(_: &AdminCap, hub: &mut SpaceHub, verifier: address) {
+        check_hub_version(hub);
+
+        hub.verifier_address = verifier;
     }
 
     entry fun withdraw(_: &AdminCap, hub: &mut SpaceHub, ctx: &mut TxContext) {
@@ -746,8 +767,10 @@ module holasui_quest::quest {
         share_object(SpaceHub {
             id: object::new(ctx),
             version: VERSION,
-            balance: balance::zero(),
             fee_for_creating_journey: FEE_FOR_CREATING_CAMPAIGN,
+            fee_for_start_quest: FEE_FOR_START_QUEST,
+            verifier_address: VERIFIER,
+            balance: balance::zero(),
             space_creators_allowlist: table::new(ctx),
             spaces: table_vec::empty<ID>(ctx),
         })
