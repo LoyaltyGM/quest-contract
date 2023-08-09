@@ -12,7 +12,7 @@ module holasui_quest::quest_test {
     use sui::test_scenario as ts;
     use sui::test_scenario::Scenario;
 
-    use holasui_quest::quest::{Self, Space, SpaceAdminCap, SpaceHub, SoulboundReward, NftReward};
+    use holasui_quest::quest::{Self, NftReward, SoulboundReward, Space, SpaceAdminCap, SpaceHub};
 
     const ADMIN: address = @0xA11CE;
     const CREATOR: address = @0x923E;
@@ -284,10 +284,24 @@ module holasui_quest::quest_test {
         let quest_id = create_quest(&mut test, &mut space, &mut space_admin_cap, journey_id);
         let clock = clock::create_for_testing(ts::ctx(&mut test));
         let verifier_cap = quest::test_new_verifier_cap(ts::ctx(&mut test));
+        let coin = coin::mint_for_testing<SUI>(
+            quest::fee_for_starting_quest(&mut hub),
+            ts::ctx(&mut test)
+        );
 
         clock::increment_for_testing(&mut clock, 100);
 
         assert!(!table::contains(quest::quest_completed_users(&space, journey_id, quest_id), USER), 0);
+
+
+        ts::next_tx(&mut test, USER);
+
+
+        quest::start_quest(&mut coin, &mut space, journey_id, quest_id, &clock, ts::ctx(&mut test));
+
+
+        ts::next_tx(&mut test, CREATOR);
+
 
         quest::complete_quest(&verifier_cap, &mut space, journey_id, quest_id, USER, &clock);
 
@@ -296,6 +310,7 @@ module holasui_quest::quest_test {
         quest::test_destroy_admin_cap(admin_cap);
         quest::test_destroy_verifier_cap(verifier_cap);
         clock::destroy_for_testing(clock);
+        coin::burn_for_testing(coin);
         ts::return_shared(hub);
         ts::return_shared(space);
         ts::return_to_sender(&test, space_admin_cap);
@@ -329,10 +344,24 @@ module holasui_quest::quest_test {
         let quest_id = create_quest(&mut test, &mut space, &mut space_admin_cap, journey_id);
         let clock = clock::create_for_testing(ts::ctx(&mut test));
         let verifier_cap = quest::test_new_verifier_cap(ts::ctx(&mut test));
+        let coin = coin::mint_for_testing<SUI>(
+            quest::fee_for_starting_quest(&mut hub),
+            ts::ctx(&mut test)
+        );
 
         clock::increment_for_testing(&mut clock, 100);
 
         assert!(!table::contains(quest::quest_completed_users(&space, journey_id, quest_id), USER), 0);
+
+
+        ts::next_tx(&mut test, USER);
+
+
+        quest::start_quest(&mut coin, &mut space, journey_id, quest_id, &clock, ts::ctx(&mut test));
+
+
+        ts::next_tx(&mut test, CREATOR);
+
 
         quest::complete_quest(&verifier_cap, &mut space, journey_id, quest_id, USER, &clock);
         quest::complete_quest(&verifier_cap, &mut space, journey_id, quest_id, USER, &clock);
@@ -340,6 +369,7 @@ module holasui_quest::quest_test {
         quest::test_destroy_admin_cap(admin_cap);
         quest::test_destroy_verifier_cap(verifier_cap);
         clock::destroy_for_testing(clock);
+        coin::burn_for_testing(coin);
         ts::return_shared(hub);
         ts::return_shared(space);
         ts::return_to_sender(&test, space_admin_cap);
@@ -348,7 +378,7 @@ module holasui_quest::quest_test {
 
     #[test]
     #[expected_failure(abort_code = quest::EInvalidTime)]
-    fun complete_quest_not_started() {
+    fun complete_quest_before_start_time() {
         let test = ts::begin(ADMIN);
 
         quest::test_new_space_hub(ts::ctx(&mut test));
@@ -387,7 +417,7 @@ module holasui_quest::quest_test {
 
     #[test]
     #[expected_failure(abort_code = quest::EInvalidTime)]
-    fun complete_quest_finished() {
+    fun complete_quest_after_finish_time() {
         let test = ts::begin(ADMIN);
 
         quest::test_new_space_hub(ts::ctx(&mut test));
@@ -454,8 +484,22 @@ module holasui_quest::quest_test {
         let quest_id = create_quest(&mut test, &mut space, &mut space_admin_cap, journey_id);
         let clock = clock::create_for_testing(ts::ctx(&mut test));
         let verifier_cap = quest::test_new_verifier_cap(ts::ctx(&mut test));
+        let coin = coin::mint_for_testing<SUI>(
+            quest::fee_for_starting_quest(&mut hub),
+            ts::ctx(&mut test)
+        );
 
         clock::increment_for_testing(&mut clock, 100);
+
+
+        ts::next_tx(&mut test, USER);
+
+
+        quest::start_quest(&mut coin, &mut space, journey_id, quest_id, &clock, ts::ctx(&mut test));
+
+
+        ts::next_tx(&mut test, CREATOR);
+
 
         quest::complete_quest(&verifier_cap, &mut space, journey_id, quest_id, USER, &clock);
 
@@ -473,6 +517,7 @@ module holasui_quest::quest_test {
         quest::test_destroy_admin_cap(admin_cap);
         quest::test_destroy_verifier_cap(verifier_cap);
         clock::destroy_for_testing(clock);
+        coin::burn_for_testing(coin);
         ts::return_shared(hub);
         ts::return_shared(space);
         ts::return_to_address(CREATOR, space_admin_cap);
@@ -506,8 +551,22 @@ module holasui_quest::quest_test {
         let quest_id = create_quest(&mut test, &mut space, &mut space_admin_cap, journey_id);
         let clock = clock::create_for_testing(ts::ctx(&mut test));
         let verifier_cap = quest::test_new_verifier_cap(ts::ctx(&mut test));
+        let coin = coin::mint_for_testing<SUI>(
+            quest::fee_for_starting_quest(&mut hub),
+            ts::ctx(&mut test)
+        );
 
         clock::increment_for_testing(&mut clock, 100);
+
+
+        ts::next_tx(&mut test, USER);
+
+
+        quest::start_quest(&mut coin, &mut space, journey_id, quest_id, &clock, ts::ctx(&mut test));
+
+
+        ts::next_tx(&mut test, CREATOR);
+
 
         quest::complete_quest(&verifier_cap, &mut space, journey_id, quest_id, USER, &clock);
 
@@ -525,6 +584,7 @@ module holasui_quest::quest_test {
         quest::test_destroy_admin_cap(admin_cap);
         quest::test_destroy_verifier_cap(verifier_cap);
         clock::destroy_for_testing(clock);
+        coin::burn_for_testing(coin);
         ts::return_shared(hub);
         ts::return_shared(space);
         ts::return_to_address(CREATOR, space_admin_cap);
@@ -614,8 +674,22 @@ module holasui_quest::quest_test {
         let quest_id = create_quest(&mut test, &mut space, &mut space_admin_cap, journey_id);
         let clock = clock::create_for_testing(ts::ctx(&mut test));
         let verifier_cap = quest::test_new_verifier_cap(ts::ctx(&mut test));
+        let coin = coin::mint_for_testing<SUI>(
+            quest::fee_for_starting_quest(&mut hub),
+            ts::ctx(&mut test)
+        );
 
         clock::increment_for_testing(&mut clock, 100);
+
+
+        ts::next_tx(&mut test, USER);
+
+
+        quest::start_quest(&mut coin, &mut space, journey_id, quest_id, &clock, ts::ctx(&mut test));
+
+
+        ts::next_tx(&mut test, CREATOR);
+
 
         quest::complete_quest(&verifier_cap, &mut space, journey_id, quest_id, USER, &clock);
 
@@ -628,6 +702,7 @@ module holasui_quest::quest_test {
         quest::test_destroy_admin_cap(admin_cap);
         quest::test_destroy_verifier_cap(verifier_cap);
         clock::destroy_for_testing(clock);
+        coin::burn_for_testing(coin);
         ts::return_shared(hub);
         ts::return_shared(space);
         ts::return_to_address(CREATOR, space_admin_cap);
@@ -660,8 +735,22 @@ module holasui_quest::quest_test {
         let quest_id = create_quest(&mut test, &mut space, &mut space_admin_cap, journey_id);
         let clock = clock::create_for_testing(ts::ctx(&mut test));
         let verifier_cap = quest::test_new_verifier_cap(ts::ctx(&mut test));
+        let coin = coin::mint_for_testing<SUI>(
+            quest::fee_for_starting_quest(&mut hub),
+            ts::ctx(&mut test)
+        );
 
         clock::increment_for_testing(&mut clock, 100);
+
+
+        ts::next_tx(&mut test, USER);
+
+
+        quest::start_quest(&mut coin, &mut space, journey_id, quest_id, &clock, ts::ctx(&mut test));
+
+
+        ts::next_tx(&mut test, CREATOR);
+
 
         quest::complete_quest(&verifier_cap, &mut space, journey_id, quest_id, USER, &clock);
 
@@ -682,6 +771,7 @@ module holasui_quest::quest_test {
         quest::test_destroy_admin_cap(admin_cap);
         quest::test_destroy_verifier_cap(verifier_cap);
         clock::destroy_for_testing(clock);
+        coin::burn_for_testing(coin);
         ts::return_shared(hub);
         ts::return_shared(space);
         ts::return_to_address(CREATOR, space_admin_cap);
@@ -733,8 +823,22 @@ module holasui_quest::quest_test {
         let quest_id = create_quest(&mut test, &mut space, &mut space_admin_cap, journey_id);
         let clock = clock::create_for_testing(ts::ctx(&mut test));
         let verifier_cap = quest::test_new_verifier_cap(ts::ctx(&mut test));
+        let coin = coin::mint_for_testing<SUI>(
+            quest::fee_for_starting_quest(&mut hub),
+            ts::ctx(&mut test)
+        );
 
         clock::increment_for_testing(&mut clock, 100);
+
+
+        ts::next_tx(&mut test, USER);
+
+
+        quest::start_quest(&mut coin, &mut space, journey_id, quest_id, &clock, ts::ctx(&mut test));
+
+
+        ts::next_tx(&mut test, CREATOR);
+
 
         quest::complete_quest(&verifier_cap, &mut space, journey_id, quest_id, USER, &clock);
 
@@ -755,6 +859,7 @@ module holasui_quest::quest_test {
         quest::test_destroy_admin_cap(admin_cap);
         quest::test_destroy_verifier_cap(verifier_cap);
         clock::destroy_for_testing(clock);
+        coin::burn_for_testing(coin);
         ts::return_shared(hub);
         ts::return_shared(space);
         ts::return_to_address(CREATOR, space_admin_cap);
