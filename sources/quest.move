@@ -798,111 +798,102 @@ module holasui_quest::quest {
 
     // ======== View functions: Journey
 
-    public fun journey(space: &Space, journey_id: ID): &Journey {
-        object_table::borrow(&space.journeys, journey_id)
+    public fun journey_reward_type(journey: &Journey): u64 {
+        journey.reward_type
     }
 
-    public fun journey_reward_type(space: &Space, journey_id: ID): u64 {
-        journey(space, journey_id).reward_type
+    public fun journey_reward_required_points(journey: &Journey): u64 {
+        journey.reward_required_points
     }
 
-    public fun journey_reward_required_points(space: &Space, journey_id: ID): u64 {
-        journey(space, journey_id).reward_required_points
+    public fun journey_reward_image_url(journey: &Journey): Url {
+        journey.reward_image_url
     }
 
-    public fun journey_reward_image_url(space: &Space, journey_id: ID): Url {
-        journey(space, journey_id).reward_image_url
+    public fun journey_name(journey: &Journey): String {
+        journey.name
     }
 
-    public fun journey_name(space: &Space, journey_id: ID): String {
-        journey(space, journey_id).name
+    public fun journey_description(journey: &Journey): String {
+        journey.description
     }
 
-    public fun journey_description(space: &Space, journey_id: ID): String {
-        journey(space, journey_id).description
+    public fun journey_start_time(journey: &Journey): u64 {
+        journey.start_time
     }
 
-    public fun journey_start_time(space: &Space, journey_id: ID): u64 {
-        journey(space, journey_id).start_time
+    public fun journey_end_time(journey: &Journey): u64 {
+        journey.end_time
     }
 
-    public fun journey_end_time(space: &Space, journey_id: ID): u64 {
-        journey(space, journey_id).end_time
+    public fun journey_total_completed(journey: &Journey): u64 {
+        journey.total_completed
     }
 
-    public fun journey_total_completed(space: &Space, journey_id: ID): u64 {
-        journey(space, journey_id).total_completed
+    public fun journey_quests(journey: &Journey): &ObjectTable<ID, Quest> {
+        &journey.quests
     }
 
-    public fun journey_quests(space: &Space, journey_id: ID): &ObjectTable<ID, Quest> {
-        &journey(space, journey_id).quests
+    public fun journey_completed_users(journey: &Journey): &Table<address, bool> {
+        &journey.completed_users
     }
 
-    public fun journey_completed_users(space: &Space, journey_id: ID): &Table<address, bool> {
-        &journey(space, journey_id).completed_users
+    public fun journey_users_points(journey: &Journey): &Table<address, u64> {
+        &journey.users_points
     }
 
-    public fun journey_users_points(space: &Space, journey_id: ID): &Table<address, u64> {
-        &journey(space, journey_id).users_points
-    }
-
-    public fun journey_users_completed_quests(space: &Space, journey_id: ID): &Table<address, u64> {
-        &journey(space, journey_id).users_completed_quests
+    public fun journey_users_completed_quests(journey: &Journey): &Table<address, u64> {
+        &journey.users_completed_quests
     }
 
     // ======== View functions: Quest
 
-    public fun quest(space: &Space, journey_id: ID, quest_id: ID): &Quest {
-        let journey = object_table::borrow(&space.journeys, journey_id);
-        object_table::borrow(&journey.quests, quest_id)
+    public fun quest_points_amount(quest: &Quest): u64 {
+        quest.points_amount
     }
 
-    public fun quest_points_amount(space: &Space, journey_id: ID, quest_id: ID): u64 {
-        quest(space, journey_id, quest_id).points_amount
+    public fun quest_name(quest: &Quest): String {
+        quest.name
     }
 
-    public fun quest_name(space: &Space, journey_id: ID, quest_id: ID): String {
-        quest(space, journey_id, quest_id).name
+    public fun quest_description(quest: &Quest): String {
+        quest.description
     }
 
-    public fun quest_description(space: &Space, journey_id: ID, quest_id: ID): String {
-        quest(space, journey_id, quest_id).description
+    public fun quest_call_to_action_url(quest: &Quest): Url {
+        quest.call_to_action_url
     }
 
-    public fun quest_call_to_action_url(space: &Space, journey_id: ID, quest_id: ID): Url {
-        quest(space, journey_id, quest_id).call_to_action_url
+    public fun quest_package_id(quest: &Quest): ID {
+        quest.package_id
     }
 
-    public fun quest_package_id(space: &Space, journey_id: ID, quest_id: ID): ID {
-        quest(space, journey_id, quest_id).package_id
+    public fun quest_module_name(quest: &Quest): String {
+        quest.module_name
     }
 
-    public fun quest_module_name(space: &Space, journey_id: ID, quest_id: ID): String {
-        quest(space, journey_id, quest_id).module_name
+    public fun quest_function_name(quest: &Quest): String {
+        quest.function_name
     }
 
-    public fun quest_function_name(space: &Space, journey_id: ID, quest_id: ID): String {
-        quest(space, journey_id, quest_id).function_name
+    public fun quest_arguments(quest: &Quest): &vector<String> {
+        &quest.arguments
     }
 
-    public fun quest_arguments(space: &Space, journey_id: ID, quest_id: ID): &vector<String> {
-        &quest(space, journey_id, quest_id).arguments
+    public fun quest_total_completed(quest: &Quest): u64 {
+        quest.total_completed
     }
 
-    public fun quest_total_completed(space: &Space, journey_id: ID, quest_id: ID): u64 {
-        quest(space, journey_id, quest_id).total_completed
+    public fun quest_completed_users(quest: &Quest): &Table<address, bool> {
+        &quest.completed_users
     }
 
-    public fun quest_completed_users(space: &Space, journey_id: ID, quest_id: ID): &Table<address, bool> {
-        &quest(space, journey_id, quest_id).completed_users
+    public fun quest_started_user(quest: &Quest, user: address): bool {
+        table::contains(&quest.completed_users, user)
     }
 
-    public fun quest_started_user(space: &Space, journey_id: ID, quest_id: ID, user: address): bool {
-        table::contains(quest_completed_users(space, journey_id, quest_id), user)
-    }
-
-    public fun quest_completed_user(space: &Space, journey_id: ID, quest_id: ID, user: address): bool {
-        let completed_users = quest_completed_users(space, journey_id, quest_id);
+    public fun quest_completed_user(quest: &Quest, user: address): bool {
+        let completed_users = &quest.completed_users;
         if (table::contains(completed_users, user)) {
             return *table::borrow(completed_users, user)
         };
