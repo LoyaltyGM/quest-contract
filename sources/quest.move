@@ -894,9 +894,19 @@ module holasui_quest::quest {
     }
 
     public fun quest_completed_users(space: &Space, journey_id: ID, quest_id: ID): &Table<address, bool> {
-        let journey = object_table::borrow(&space.journeys, journey_id);
-        let quest = object_table::borrow(&journey.quests, quest_id);
-        &quest.completed_users
+        &quest(space, journey_id, quest_id).completed_users
+    }
+
+    public fun quest_started_user(space: &Space, journey_id: ID, quest_id: ID, user: address): bool {
+        table::contains(quest_completed_users(space, journey_id, quest_id), user)
+    }
+
+    public fun quest_completed_user(space: &Space, journey_id: ID, quest_id: ID, user: address): bool {
+        let completed_users = quest_completed_users(space, journey_id, quest_id);
+        if (table::contains(completed_users, user)) {
+            return *table::borrow(completed_users, user)
+        };
+        false
     }
 
     // ======== Utility functions =========
