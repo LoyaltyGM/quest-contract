@@ -5,10 +5,10 @@ version = "0.0.0"
 [dependencies.Sui]
 git = "https://github.com/MystenLabs/sui.git"
 subdir = "crates/sui-framework/packages/sui-framework"
-# mainnet-1.6.3
-rev = "f4a70c831b84ffd12a1b9c19c3c4bb7d15ad993a"
-## testnet-1.6.2
-#rev = "8459599979410611b84e98d8909b7844075e21af"
+# mainnet-1.7.1
+rev = "e1173ae8288b4ba3b7f41412e67225573b8fb6d3"
+## testnet-1.7.1
+#rev = "e1173ae8288b4ba3b7f41412e67225573b8fb6d3"
 
 [addresses]
 holasui_quest = "0x0"
