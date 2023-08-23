@@ -28,7 +28,7 @@ module holasui_quest::quest {
     const REWARD_TYPE_NFT: u64 = 0;
     const REWARD_TYPE_SOULBOUND: u64 = 1;
 
-    const FEE_FOR_CREATING_CAMPAIGN: u64 = 1000000000;
+    const FEE_FOR_CREATING_JOURNEY: u64 = 1000000000;
     const FEE_FOR_START_QUEST: u64 = 10000000;
 
     // ======== Errors =========
@@ -258,7 +258,7 @@ module holasui_quest::quest {
         share_object(SpaceHub {
             id: object::new(ctx),
             version: VERSION,
-            fee_for_creating_journey: FEE_FOR_CREATING_CAMPAIGN,
+            fee_for_creating_journey: FEE_FOR_CREATING_JOURNEY,
             fee_for_start_quest: FEE_FOR_START_QUEST,
             verifier_address: VERIFIER,
             balance: balance::zero(),
@@ -938,7 +938,7 @@ module holasui_quest::quest {
         share_object(SpaceHub {
             id: object::new(ctx),
             version: VERSION,
-            fee_for_creating_journey: FEE_FOR_CREATING_CAMPAIGN,
+            fee_for_creating_journey: FEE_FOR_CREATING_JOURNEY,
             fee_for_start_quest: FEE_FOR_START_QUEST,
             verifier_address: VERIFIER,
             balance: balance::zero(),
