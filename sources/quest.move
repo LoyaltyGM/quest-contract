@@ -9,7 +9,6 @@ module holasui_quest::quest {
     use sui::object::{Self, ID, UID};
     use sui::object_table::{Self, ObjectTable};
     use sui::package;
-    use sui::pay;
     use sui::sui::SUI;
     use sui::table::{Self, Table};
     use sui::table_vec::{Self, TableVec};
@@ -17,7 +16,7 @@ module holasui_quest::quest {
     use sui::tx_context::{sender, TxContext};
     use sui::url::{Self, Url};
 
-    use holasui_quest::utils::{handle_payment, withdraw_balance};
+    use holasui_quest::utils::{handle_payment, handle_transfer, withdraw_balance};
 
     // ======== Constants =========
 
@@ -664,7 +663,8 @@ module holasui_quest::quest {
     // ======== User functions =========
 
     public fun start_quest(
-        coin: &mut Coin<SUI>,
+        coin: Coin<SUI>,
+        hub: &mut SpaceHub,
         space: &mut Space,
         journey_id: ID,
         quest_id: ID,
@@ -673,7 +673,7 @@ module holasui_quest::quest {
     ) {
         check_space_version(space);
 
-        pay::split_and_transfer(coin, FEE_FOR_START_QUEST, VERIFIER, ctx);
+        handle_transfer(VERIFIER, coin, hub.fee_for_start_quest, ctx);
 
         let journey = object_table::borrow_mut(&mut space.journeys, journey_id);
         assert!(

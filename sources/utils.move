@@ -33,4 +33,15 @@ module holasui_quest::utils {
         coin::put(balance, payment);
         pay::keep(coin, ctx);
     }
+
+    public(friend) fun handle_transfer<T>(
+        recipeint: address,
+        coin: Coin<T>,
+        price: u64,
+        ctx: &mut TxContext
+    ) {
+        assert!(coin::value(&coin) >= price, EInsufficientPay);
+        pay::split_and_transfer(&mut coin, price, recipeint, ctx);
+        pay::keep(coin, ctx);
+    }
 }
