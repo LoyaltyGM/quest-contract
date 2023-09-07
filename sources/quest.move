@@ -663,8 +663,8 @@ module holasui_quest::quest {
     // ======== User functions =========
 
     public fun start_quest(
-        coin: Coin<SUI>,
         hub: &mut SpaceHub,
+        coin: Coin<SUI>,
         space: &mut Space,
         journey_id: ID,
         quest_id: ID,
