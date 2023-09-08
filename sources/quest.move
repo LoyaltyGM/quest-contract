@@ -796,6 +796,14 @@ module holasui_quest::quest {
         &space.points
     }
 
+    public fun space_user_points(space: &Space, user: address): u64 {
+        let space_points = space_points(space);
+        if (table::contains(space_points, user)) {
+            return *table::borrow(space_points, user)
+        };
+        0
+    }
+
     // ======== View functions: Journey
 
     public fun journey(space: &Space, journey_id: ID): &Journey {
@@ -842,12 +850,36 @@ module holasui_quest::quest {
         &journey(space, journey_id).completed_users
     }
 
+    public fun journey_completed_user(space: &Space, journey_id: ID, user: address): bool {
+        let completed_users = journey_completed_users(space, journey_id);
+        if (table::contains(completed_users, user)) {
+            return *table::borrow(completed_users, user)
+        };
+        false
+    }
+
     public fun journey_users_points(space: &Space, journey_id: ID): &Table<address, u64> {
         &journey(space, journey_id).users_points
     }
 
+    public fun journey_user_points(space: &Space, journey_id: ID, user: address): u64 {
+        let users_points = journey_users_points(space, journey_id);
+        if (table::contains(users_points, user)) {
+            return *table::borrow(users_points, user)
+        };
+        0
+    }
+
     public fun journey_users_completed_quests(space: &Space, journey_id: ID): &Table<address, u64> {
         &journey(space, journey_id).users_completed_quests
+    }
+
+    public fun journey_user_completed_quests(space: &Space, journey_id: ID, user: address): u64 {
+        let users_completed_quests = journey_users_completed_quests(space, journey_id);
+        if (table::contains(users_completed_quests, user)) {
+            return *table::borrow(users_completed_quests, user)
+        };
+        0
     }
 
     // ======== View functions: Quest
@@ -897,10 +929,6 @@ module holasui_quest::quest {
         &quest(space, journey_id, quest_id).completed_users
     }
 
-    public fun quest_started_user(space: &Space, journey_id: ID, quest_id: ID, user: address): bool {
-        table::contains(quest_completed_users(space, journey_id, quest_id), user)
-    }
-
     public fun quest_completed_user(space: &Space, journey_id: ID, quest_id: ID, user: address): bool {
         let completed_users = quest_completed_users(space, journey_id, quest_id);
         if (table::contains(completed_users, user)) {
@@ -909,6 +937,9 @@ module holasui_quest::quest {
         false
     }
 
+    public fun quest_started_user(space: &Space, journey_id: ID, quest_id: ID, user: address): bool {
+        table::contains(quest_completed_users(space, journey_id, quest_id), user)
+    }
     // ======== Utility functions =========
 
     fun update_address_to_u64_table(table: &mut Table<address, u64>, address: address, amount: u64) {
